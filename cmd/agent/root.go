@@ -3,13 +3,10 @@ package agent
 import (
 	"context"
 	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/mariadb-operator/agent/pkg/router"
+	"github.com/mariadb-operator/agent/pkg/server"
 	"github.com/spf13/cobra"
 )
 
@@ -30,31 +27,10 @@ var rootCmd = &cobra.Command{
 			router.WithCompressLevel(compressLevel),
 			router.WithRateLimit(rateLimitRequests, rateLimitDuration),
 		)
-		server := http.Server{
-			Addr:    addr,
-			Handler: router,
+		server := server.NewServer(addr, router)
+		if err := server.Start(context.Background()); err != nil {
+			log.Fatal(err)
 		}
-
-		serverContext, stopServer := context.WithCancel(context.Background())
-
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-		go func() {
-			<-sig
-			defer stopServer()
-
-			log.Println("shutting down server")
-			if err := server.Shutdown(context.Background()); err != nil {
-				log.Fatalf("error shutting down server: %v", err)
-			}
-		}()
-
-		log.Printf("server listening at %s", addr)
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatalf("error starting server: %v", err)
-		}
-
-		<-serverContext.Done()
 	},
 }
 
