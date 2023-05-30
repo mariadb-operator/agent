@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mariadb-operator/agent/pkg/handler"
 	"github.com/mariadb-operator/agent/pkg/logger"
 	"github.com/mariadb-operator/agent/pkg/router"
 	"github.com/mariadb-operator/agent/pkg/server"
@@ -37,7 +38,11 @@ var rootCmd = &cobra.Command{
 			log.Fatalf("error creating logger: %v", err)
 		}
 
+		handlerLogger := logger.WithName("handler")
+		handler := handler.NewHandler(&handlerLogger)
+
 		router := router.NewRouter(
+			handler,
 			router.WithCompressLevel(compressLevel),
 			router.WithRateLimit(rateLimitRequests, rateLimitDuration),
 		)
