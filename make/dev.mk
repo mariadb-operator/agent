@@ -20,7 +20,7 @@ cover: test ## Run tests and generate coverage.
 release: goreleaser ## Test release locally.
 	$(GORELEASER) release --snapshot --rm-dist
 
-RUN_FLAGS ?=
+RUN_FLAGS ?= --log-dev
 .PHONY: run
 run: lint ## Run a controller from your host.
 	go run main.go $(RUN_FLAGS)
