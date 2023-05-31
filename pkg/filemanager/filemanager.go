@@ -3,6 +3,7 @@ package filemanager
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 type FileManager struct {
@@ -11,11 +12,11 @@ type FileManager struct {
 }
 
 func NewFileManager(configDir, stateDir string) (*FileManager, error) {
-	if err := mustExist(configDir); err != nil {
-		return nil, err
+	if err := fileMustExist(configDir); err != nil {
+		return nil, fmt.Errorf("config directory does not exist: %v", err)
 	}
-	if err := mustExist(stateDir); err != nil {
-		return nil, err
+	if err := fileMustExist(stateDir); err != nil {
+		return nil, fmt.Errorf("state directory does not exist: %v", err)
 	}
 	return &FileManager{
 		configDir: configDir,
@@ -23,7 +24,22 @@ func NewFileManager(configDir, stateDir string) (*FileManager, error) {
 	}, nil
 }
 
-func mustExist(path string) error {
+func (f *FileManager) ReadStateFile(name string) ([]byte, error) {
+	return readFile(filepath.Join(f.stateDir, name))
+}
+
+func readFile(path string) ([]byte, error) {
+	if err := fileMustExist(path); err != nil {
+		return nil, fmt.Errorf("file does not exist: %v", err)
+	}
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+	return bytes, nil
+}
+
+func fileMustExist(path string) error {
 	_, err := os.Stat(path)
 	if err == nil {
 		return nil

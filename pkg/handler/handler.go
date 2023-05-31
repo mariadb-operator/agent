@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/go-logr/logr"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 )
@@ -21,7 +24,10 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Hand
 	return &Handler{
 		GaleraState: &GaleraState{
 			fileManager: fileManager,
-			logger:      &galeraStateLogger,
+			jsonEncoder: &jsonEncoder{
+				logger: &galeraStateLogger,
+			},
+			logger: &galeraStateLogger,
 		},
 		Bootstrap: &Bootstrap{
 			fileManager: fileManager,
@@ -35,4 +41,18 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Hand
 			logger:      &recoveryLogger,
 		},
 	}
+}
+
+type jsonEncoder struct {
+	logger *logr.Logger
+}
+
+func (j *jsonEncoder) encode(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		j.logger.Error(err, "error encoding json")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
