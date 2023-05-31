@@ -24,3 +24,22 @@ docker-push: ## Build multi-arch docker image and push it to the registry.
 .PHONY: docker-inspect
 docker-inspect: ## Inspect docker image.
 	docker buildx imagetools inspect $(IMG)
+
+##@ MariaDB
+
+.PHONY: mariadb
+mariadb: ## Create a MariaDB galera cluster using docker compose.
+	docker compose up -d
+
+.PHONY: mariadb-delete
+mariadb-delete: ## Delete the MariaDB galera cluster.
+	docker compose rm --stop --force
+	sudo rm -rf mariadb
+
+.PHONY: mariadb-logs
+mariadb-logs: ## Check the MariaDB galera cluster logs.
+	docker compose logs --follow
+
+.PHONY: mariadb-ps
+mariadb-ps: ## Check the MariaDB processes.
+	ps -ef | grep mariadbd

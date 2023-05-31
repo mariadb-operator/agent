@@ -20,14 +20,14 @@ cover: test ## Run tests and generate coverage.
 release: goreleaser ## Test release locally.
 	$(GORELEASER) release --snapshot --rm-dist
 
-CONFIG_DIR ?= mariadb/config
+CONFIG_DIR ?= mariadb/config/mariadb
 CONFIG_FILE ?= 1-bootstrap.cnf
 .PHONY: config
 config: ## Copies a example config file for development purposes.
 	@mkdir -p $(CONFIG_DIR)
 	cp "examples/$(CONFIG_FILE)" $(CONFIG_DIR)
 
-STATE_DIR ?= mariadb/state
+STATE_DIR ?= mariadb/state/mariadb
 STATE_FILE ?= grastate-recovery.dat
 .PHONY: state
 state: ## Copies a example state file for development purposes.
@@ -36,5 +36,11 @@ state: ## Copies a example state file for development purposes.
 
 RUN_FLAGS ?= --log-dev --config-dir=$(CONFIG_DIR) --state-dir=$(STATE_DIR)
 .PHONY: run
-run: lint config state ## Run a controller from your host.
+run: config state ## Run agent from your host.
 	go run main.go $(RUN_FLAGS)
+
+AGENT ?= $(LOCALBIN)/agent
+SU_RUN_FLAGS ?= --log-dev --config-dir=mariadb/config/mariadb-0  --state-dir=mariadb/state/mariadb-0 
+.PHONY: su-run
+su-run: build ## Run agent from your host as root to be able to access mariadb volumes and process.
+	sudo $(AGENT) $(SU_RUN_FLAGS)
