@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/httprate v0.7.4
 	github.com/go-logr/logr v1.2.4
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/zap v1.24.0
 	sigs.k8s.io/controller-runtime v0.15.0

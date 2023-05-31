@@ -31,8 +31,8 @@ docker-inspect: ## Inspect docker image.
 mariadb: ## Create a MariaDB galera cluster using docker compose.
 	docker compose up -d
 
-.PHONY: mariadb-delete
-mariadb-delete: ## Delete the MariaDB galera cluster.
+.PHONY: mariadb-rm
+mariadb-rm: ## Remove the MariaDB galera cluster.
 	docker compose rm --stop --force
 	sudo rm -rf mariadb
 

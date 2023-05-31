@@ -3,7 +3,7 @@ version: "3.3"
 services:
   mariadb-0:
     container_name: mariadb-0
-    image: mariadb:10.7.4
+    image: mariadb:10.11.3
     pid: host
     command:
       - bash
@@ -28,7 +28,7 @@ services:
       - ./mariadb/state/mariadb-0:/var/lib/mysql
   mariadb-1:
     container_name: mariadb-1
-    image: mariadb:10.7.4
+    image: mariadb:10.11.3
     pid: host
     command:
       - bash
