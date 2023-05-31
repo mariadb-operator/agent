@@ -12,11 +12,11 @@ type FileManager struct {
 }
 
 func NewFileManager(configDir, stateDir string) (*FileManager, error) {
-	if err := fileMustExist(configDir); err != nil {
-		return nil, fmt.Errorf("config directory does not exist: %v", err)
+	if _, err := os.Stat(configDir); err != nil {
+		return nil, fmt.Errorf("error reading config directory: %v", err)
 	}
-	if err := fileMustExist(stateDir); err != nil {
-		return nil, fmt.Errorf("state directory does not exist: %v", err)
+	if _, err := os.Stat(stateDir); err != nil {
+		return nil, fmt.Errorf("error reading state directory: %v", err)
 	}
 	return &FileManager{
 		configDir: configDir,
@@ -28,8 +28,12 @@ func (f *FileManager) ReadStateFile(name string) ([]byte, error) {
 	return readFile(filepath.Join(f.stateDir, name))
 }
 
+func (f *FileManager) WriteStateFile(name string, bytes []byte) error {
+	return writeFile(filepath.Join(f.stateDir, name), bytes)
+}
+
 func readFile(path string) ([]byte, error) {
-	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+	if _, err := os.Stat(path); err != nil {
 		return nil, err
 	}
 	bytes, err := os.ReadFile(path)
@@ -39,13 +43,13 @@ func readFile(path string) ([]byte, error) {
 	return bytes, nil
 }
 
-func fileMustExist(path string) error {
-	_, err := os.Stat(path)
-	if err == nil {
-		return nil
+func writeFile(path string, bytes []byte) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
 	}
-	if os.IsNotExist(err) {
-		return fmt.Errorf("'%s' does not exist", path)
+	if err := os.WriteFile(path, bytes, info.Mode()); err != nil {
+		return fmt.Errorf("error writing file: %v", err)
 	}
-	return err
+	return nil
 }

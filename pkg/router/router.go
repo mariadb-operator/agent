@@ -61,13 +61,8 @@ func apiRouter(h *handler.Handler, opts *Options) http.Handler {
 		r.Put("/", h.Bootstrap.Put)
 		r.Delete("/", h.Bootstrap.Delete)
 	})
-	r.Route("/galerastate", func(r chi.Router) {
-		r.Get("/", h.GaleraState.Get)
-		r.Post("/", h.GaleraState.Post)
-	})
-	r.Route("/mysqld", func(r chi.Router) {
-		r.Post("/", h.Mysld.Post)
-	})
+	r.Get("/galerastate", h.GaleraState.Get)
+	r.Post("/mysqld", h.Mysld.Post)
 	r.Route("/recovery", func(r chi.Router) {
 		r.Get("/", h.Recovery.Get)
 		r.Put("/", h.Recovery.Put)

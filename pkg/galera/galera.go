@@ -1,11 +1,16 @@
-package galerastate
+package galera
 
 import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"html/template"
 	"strconv"
 	"strings"
+)
+
+var (
+	GaleraStateFile = "grastate.dat"
 )
 
 type GaleraState struct {
@@ -15,15 +20,44 @@ type GaleraState struct {
 	SafeToBootstrap bool   `json:"safeToBootstrap"`
 }
 
-func (g *GaleraState) Unmarshal(b []byte) error {
-	fileScanner := bufio.NewScanner(bytes.NewReader(b))
+func (g *GaleraState) MarshalText() ([]byte, error) {
+	type tplOpts struct {
+		Version         string
+		UUID            string
+		Seqno           int
+		SafeToBootstrap int
+	}
+	tpl := createTpl("grastate.dat", `version: {{ .Version }}
+uuid: {{ .UUID }}
+seqno: {{ .Seqno }}
+safe_to_bootstrap: {{ .SafeToBootstrap }}`)
+	buf := new(bytes.Buffer)
+	err := tpl.Execute(buf, tplOpts{
+		Version: g.Version,
+		UUID:    g.UUID,
+		Seqno:   g.Seqno,
+		SafeToBootstrap: func() int {
+			if g.SafeToBootstrap {
+				return 1
+			}
+			return 0
+		}(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error rendering template: %v", err)
+	}
+	return buf.Bytes(), nil
+}
+
+func (g *GaleraState) UnmarshalText(text []byte) error {
+	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
 
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		parts := strings.Split(fileScanner.Text(), ":")
 		if len(parts) != 2 {
-			return fmt.Errorf("error unmarshalling galera state: invalid '%s'", line)
+			return fmt.Errorf("invalid galera state line: '%s'", line)
 		}
 
 		key := strings.TrimSpace(parts[0])
@@ -48,6 +82,10 @@ func (g *GaleraState) Unmarshal(b []byte) error {
 		}
 	}
 	return nil
+}
+
+func createTpl(name, t string) *template.Template {
+	return template.Must(template.New(name).Parse(t))
 }
 
 func parseBool(s string) (bool, error) {

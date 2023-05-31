@@ -9,8 +9,8 @@ import (
 )
 
 type Handler struct {
-	GaleraState *GaleraState
 	Bootstrap   *Bootstrap
+	GaleraState *GaleraState
 	Mysld       *Mysld
 	Recovery    *Recovery
 }
@@ -22,16 +22,16 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Hand
 	recoveryLogger := logger.WithName("recovery")
 
 	return &Handler{
+		Bootstrap: &Bootstrap{
+			fileManager: fileManager,
+			logger:      &bootstrapLogger,
+		},
 		GaleraState: &GaleraState{
 			fileManager: fileManager,
 			jsonEncoder: &jsonEncoder{
 				logger: &galeraStateLogger,
 			},
 			logger: &galeraStateLogger,
-		},
-		Bootstrap: &Bootstrap{
-			fileManager: fileManager,
-			logger:      &bootstrapLogger,
 		},
 		Mysld: &Mysld{
 			logger: &mysldLogger,
