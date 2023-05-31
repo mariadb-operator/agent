@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler"
 	"github.com/mariadb-operator/agent/pkg/logger"
 	"github.com/mariadb-operator/agent/pkg/router"
@@ -14,13 +15,17 @@ import (
 )
 
 var (
-	addr              string
+	addr      string
+	configDir string
+	stateDir  string
+
 	compressLevel     int
 	rateLimitRequests int
 	rateLimitDuration time.Duration
-	logLevel          string
-	logTimeEncoder    string
-	logDev            bool
+
+	logLevel       string
+	logTimeEncoder string
+	logDev         bool
 )
 
 var rootCmd = &cobra.Command{
@@ -38,8 +43,14 @@ var rootCmd = &cobra.Command{
 			log.Fatalf("error creating logger: %v", err)
 		}
 
+		fileManager, err := filemanager.NewFileManager(configDir, stateDir)
+		if err != nil {
+			logger.Error(err, "error creating file manager")
+			os.Exit(1)
+		}
+
 		handlerLogger := logger.WithName("handler")
-		handler := handler.NewHandler(&handlerLogger)
+		handler := handler.NewHandler(fileManager, &handlerLogger)
 
 		router := router.NewRouter(
 			handler,
@@ -62,9 +73,13 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVar(&addr, "addr", ":5555", "The address that the HTTP server binds to")
+	rootCmd.Flags().StringVar(&configDir, "config-dir", "/etc/mysql/mariadb.conf.d", "The directory that contains MariaDB configuration files")
+	rootCmd.Flags().StringVar(&stateDir, "state-dir", "/var/lib/mysql", "The directory that contains MariaDB state files")
+
 	rootCmd.Flags().IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
 	rootCmd.Flags().IntVar(&rateLimitRequests, "rate-limit-requests", 100, "Number of requests to be used as rate limit")
 	rootCmd.Flags().DurationVar(&rateLimitDuration, "rate-limit-duration", 1*time.Minute, "Duration to be used as rate limit")
+
 	rootCmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level to use, one of: "+
 		"debug, info, warn, error, dpanic, panic, fatal.")
 	rootCmd.Flags().StringVar(&logTimeEncoder, "log-time-encoder", "epoch", "Log time encoder to use, one of: "+

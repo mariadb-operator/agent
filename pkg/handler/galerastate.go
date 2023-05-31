@@ -4,10 +4,12 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
+	"github.com/mariadb-operator/agent/pkg/filemanager"
 )
 
 type GaleraState struct {
-	logger *logr.Logger
+	fileManager *filemanager.FileManager
+	logger      *logr.Logger
 }
 
 func (h *GaleraState) Get(w http.ResponseWriter, r *http.Request) {

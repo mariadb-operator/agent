@@ -10,6 +10,7 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.html
 
 # Dependency directories (remove the comment below to include it)
 vendor/
@@ -19,3 +20,6 @@ bin/
 
 # Packaged Helm charts
 *.tgz
+
+# Directory to keep MariaDB files used for development
+mariadb/

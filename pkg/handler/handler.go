@@ -2,16 +2,17 @@ package handler
 
 import (
 	"github.com/go-logr/logr"
+	"github.com/mariadb-operator/agent/pkg/filemanager"
 )
 
 type Handler struct {
 	GaleraState *GaleraState
 	Bootstrap   *Bootstrap
-	Recovery    *Recovery
 	Mysld       *Mysld
+	Recovery    *Recovery
 }
 
-func NewHandler(logger *logr.Logger) *Handler {
+func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Handler {
 	galeraStateLogger := logger.WithName("galerastate")
 	bootstrapLogger := logger.WithName("bootstrap")
 	mysldLogger := logger.WithName("mysqld")
@@ -19,16 +20,19 @@ func NewHandler(logger *logr.Logger) *Handler {
 
 	return &Handler{
 		GaleraState: &GaleraState{
-			logger: &galeraStateLogger,
+			fileManager: fileManager,
+			logger:      &galeraStateLogger,
 		},
 		Bootstrap: &Bootstrap{
-			logger: &bootstrapLogger,
+			fileManager: fileManager,
+			logger:      &bootstrapLogger,
 		},
 		Mysld: &Mysld{
 			logger: &mysldLogger,
 		},
 		Recovery: &Recovery{
-			logger: &recoveryLogger,
+			fileManager: fileManager,
+			logger:      &recoveryLogger,
 		},
 	}
 }
