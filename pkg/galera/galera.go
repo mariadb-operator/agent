@@ -10,7 +10,14 @@ import (
 )
 
 var (
-	GaleraStateFile = "grastate.dat"
+	GaleraStateFileName = "grastate.dat"
+	BootstrapFileName   = "1-bootstrap.cnf"
+	BootstrapFile       = `[galera]
+wsrep_new_cluster="ON"`
+	RecoveryFileName = "2-recovery.cnf"
+	RecoveryFile     = `[galera]
+log_error=mariadb.err
+wsrep_recover="ON"`
 )
 
 type GaleraState struct {

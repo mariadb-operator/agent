@@ -16,7 +16,7 @@ type GaleraState struct {
 }
 
 func (h *GaleraState) Get(w http.ResponseWriter, r *http.Request) {
-	bytes, err := h.fileManager.ReadStateFile(galera.GaleraStateFile)
+	bytes, err := h.fileManager.ReadStateFile(galera.GaleraStateFileName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "Not found", http.StatusNotFound)

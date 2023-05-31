@@ -2,8 +2,13 @@ package filemanager
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+)
+
+var (
+	writeFileMode = fs.FileMode(0777)
 )
 
 type FileManager struct {
@@ -25,31 +30,17 @@ func NewFileManager(configDir, stateDir string) (*FileManager, error) {
 }
 
 func (f *FileManager) ReadStateFile(name string) ([]byte, error) {
-	return readFile(filepath.Join(f.stateDir, name))
+	return os.ReadFile(filepath.Join(f.stateDir, name))
 }
 
 func (f *FileManager) WriteStateFile(name string, bytes []byte) error {
-	return writeFile(filepath.Join(f.stateDir, name), bytes)
+	return os.WriteFile(filepath.Join(f.stateDir, name), bytes, writeFileMode)
 }
 
-func readFile(path string) ([]byte, error) {
-	if _, err := os.Stat(path); err != nil {
-		return nil, err
-	}
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("error reading file: %v", err)
-	}
-	return bytes, nil
+func (f *FileManager) WriteConfigFile(name string, bytes []byte) error {
+	return os.WriteFile(filepath.Join(f.configDir, name), bytes, writeFileMode)
 }
 
-func writeFile(path string, bytes []byte) error {
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-	if err := os.WriteFile(path, bytes, info.Mode()); err != nil {
-		return fmt.Errorf("error writing file: %v", err)
-	}
-	return nil
+func (f *FileManager) DeleteConfigFile(name string) error {
+	return os.Remove(filepath.Join(f.configDir, name))
 }
