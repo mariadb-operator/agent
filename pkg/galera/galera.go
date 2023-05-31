@@ -60,34 +60,49 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
 
+	var version *string
+	var uuid *string
+	var seqno *int
+	var safeToBootstrap *bool
+
 	for fileScanner.Scan() {
-		line := fileScanner.Text()
 		parts := strings.Split(fileScanner.Text(), ":")
 		if len(parts) != 2 {
-			return fmt.Errorf("invalid galera state line: '%s'", line)
+			continue
 		}
 
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 		switch key {
 		case "version":
-			g.Version = value
+			version = &value
 		case "uuid":
-			g.UUID = value
+			uuid = &value
 		case "seqno":
 			i, err := strconv.Atoi(value)
 			if err != nil {
 				return fmt.Errorf("error parsing seqno: %v", err)
 			}
-			g.Seqno = i
+			seqno = &i
 		case "safe_to_bootstrap":
 			b, err := parseBool(value)
 			if err != nil {
 				return fmt.Errorf("error parsing safe_to_bootstrap: %v", err)
 			}
-			g.SafeToBootstrap = b
+			safeToBootstrap = &b
 		}
 	}
+
+	if version == nil || uuid == nil || seqno == nil || safeToBootstrap == nil {
+		return fmt.Errorf(
+			"invalid galera state file: version=%v uuid=%v seqno=%v safeToBootstrap=%v",
+			version, uuid, seqno, safeToBootstrap,
+		)
+	}
+	g.Version = *version
+	g.UUID = *uuid
+	g.Seqno = *seqno
+	g.SafeToBootstrap = *safeToBootstrap
 	return nil
 }
 
