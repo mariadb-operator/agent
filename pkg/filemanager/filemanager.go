@@ -29,8 +29,8 @@ func (f *FileManager) ReadStateFile(name string) ([]byte, error) {
 }
 
 func readFile(path string) ([]byte, error) {
-	if err := fileMustExist(path); err != nil {
-		return nil, fmt.Errorf("file does not exist: %v", err)
+	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+		return nil, err
 	}
 	bytes, err := os.ReadFile(path)
 	if err != nil {
