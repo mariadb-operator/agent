@@ -28,7 +28,7 @@ wsrep_node_address="${HOSTNAME}"
 wsrep_node_name="${HOSTNAME}"
 EOF
 
-if [ "$HOSTNAME" = "mariadb-0" ]; then 
+if [ "$HOSTNAME" = "mariadb-0" ] && [ ! -n "$(ls -A /var/lib/mysql)" ]; then 
     bash -c "$ENTRYPOINT mariadbd --wsrep-new-cluster"
 else
     bash -c "$ENTRYPOINT mariadbd"
