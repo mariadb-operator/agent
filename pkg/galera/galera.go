@@ -7,6 +7,8 @@ import (
 	"html/template"
 	"strconv"
 	"strings"
+
+	guuid "github.com/google/uuid"
 )
 
 var (
@@ -78,7 +80,9 @@ func (g *GaleraState) Unmarshal(text []byte) error {
 		case "version":
 			version = &value
 		case "uuid":
-			// TODO: validate UUID
+			if _, err := guuid.Parse(value); err != nil {
+				return fmt.Errorf("error parsing uuid: %v", err)
+			}
 			uuid = &value
 		case "seqno":
 			i, err := strconv.Atoi(value)
@@ -113,6 +117,13 @@ type Bootstrap struct {
 	Seqno int    `json:"seqno"`
 }
 
+func (b *Bootstrap) Validate() error {
+	if _, err := guuid.Parse(b.UUID); err != nil {
+		return fmt.Errorf("invalid uuid: %v", err)
+	}
+	return nil
+}
+
 func (r *Bootstrap) Unmarshal(text []byte) error {
 	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
@@ -129,30 +140,26 @@ func (r *Bootstrap) Unmarshal(text []byte) error {
 		if len(parts) != 2 {
 			continue
 		}
-		// TODO: validate UUID
-		parsedUUID := strings.TrimSpace(parts[0])
-		parsedSeqno, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+
+		currentUUID := strings.TrimSpace(parts[0])
+		if _, err := guuid.Parse(currentUUID); err != nil {
+			return fmt.Errorf("error parsing uuid: %v", err)
+		}
+		currentSeqno, err := strconv.Atoi(strings.TrimSpace(parts[1]))
 		if err != nil {
 			return fmt.Errorf("error parsing seqno: %v", err)
 		}
-		uuid = &parsedUUID
-		seqno = &parsedSeqno
+		uuid = &currentUUID
+		seqno = &currentSeqno
 	}
 	if uuid == nil || seqno == nil {
 		return fmt.Errorf(
-			"unable to parse uuid and seqno: uuid=%v seqno=%v",
+			"unable to find uuid and seqno: uuid=%v seqno=%v",
 			uuid, seqno,
 		)
 	}
 	r.UUID = *uuid
 	r.Seqno = *seqno
-	return nil
-}
-
-func (r *Bootstrap) Validate() error {
-	if r.UUID == "" || r.Seqno == 0 {
-		return fmt.Errorf("uuid and seqno are mandatory")
-	}
 	return nil
 }
 

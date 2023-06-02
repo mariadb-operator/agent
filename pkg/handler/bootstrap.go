@@ -24,6 +24,11 @@ func (h *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid body: a valid bootstrap object must be provided", http.StatusBadRequest)
 		return
 	}
+	if err := bootstrap.Validate(); err != nil {
+		h.logger.Error(err, "invalid bootstrap")
+		http.Error(w, fmt.Sprintf("invalid bootstrap: %v", err), http.StatusBadRequest)
+		return
+	}
 
 	if err := h.setSafeToBootstrap(&bootstrap); err != nil {
 		h.logger.Error(err, "error setting safe to bootstrap")

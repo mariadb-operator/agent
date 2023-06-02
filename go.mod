@@ -10,6 +10,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/zap v1.24.0
 	sigs.k8s.io/controller-runtime v0.15.0
+	github.com/google/uuid v1.3.0
 )
 
 require (
