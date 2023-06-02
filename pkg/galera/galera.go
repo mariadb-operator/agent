@@ -28,7 +28,7 @@ type GaleraState struct {
 	SafeToBootstrap bool   `json:"safeToBootstrap"`
 }
 
-func (g *GaleraState) MarshalText() ([]byte, error) {
+func (g *GaleraState) Marshal() ([]byte, error) {
 	type tplOpts struct {
 		Version         string
 		UUID            string
@@ -57,7 +57,7 @@ safe_to_bootstrap: {{ .SafeToBootstrap }}`)
 	return buf.Bytes(), nil
 }
 
-func (g *GaleraState) UnmarshalText(text []byte) error {
+func (g *GaleraState) Unmarshal(text []byte) error {
 	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
 

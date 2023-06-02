@@ -28,7 +28,7 @@ func (h *GaleraState) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var galeraState galera.GaleraState
-	if err := galeraState.UnmarshalText(bytes); err != nil {
+	if err := galeraState.Unmarshal(bytes); err != nil {
 		h.logger.Error(err, "error unmarshalling galera state")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

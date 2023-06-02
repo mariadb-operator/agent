@@ -76,14 +76,14 @@ func (h *Bootstrap) setSafeToBootstrap(bootstrap *galera.Bootstrap) error {
 	}
 
 	var galeraState galera.GaleraState
-	if err := galeraState.UnmarshalText(bytes); err != nil {
+	if err := galeraState.Unmarshal(bytes); err != nil {
 		return fmt.Errorf("error unmarshaling galera state: %v", err)
 	}
 
 	galeraState.UUID = bootstrap.UUID
 	galeraState.Seqno = bootstrap.Seqno
 	galeraState.SafeToBootstrap = true
-	bytes, err = galeraState.MarshalText()
+	bytes, err = galeraState.Marshal()
 	if err != nil {
 		return fmt.Errorf("error marshallng galera state: %v", err)
 	}
