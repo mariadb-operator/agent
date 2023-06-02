@@ -15,9 +15,10 @@ var (
 	BootstrapFile       = `[galera]
 wsrep_new_cluster="ON"`
 	RecoveryFileName = "2-recovery.cnf"
-	RecoveryFile     = `[galera]
-log_error=mariadb.err
-wsrep_recover="ON"`
+	RecoveryLog      = "mariadb.err"
+	RecoveryFile     = fmt.Sprintf(`[galera]
+log_error=%s
+wsrep_recover="ON"`, RecoveryLog)
 )
 
 type GaleraState struct {
@@ -77,6 +78,7 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 		case "version":
 			version = &value
 		case "uuid":
+			// TODO: validate UUID
 			uuid = &value
 		case "seqno":
 			i, err := strconv.Atoi(value)
@@ -103,6 +105,54 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 	g.UUID = *uuid
 	g.Seqno = *seqno
 	g.SafeToBootstrap = *safeToBootstrap
+	return nil
+}
+
+type Recover struct {
+	UUID  string `json:"uuid"`
+	Seqno int    `json:"seqno"`
+}
+
+func (r *Recover) UnmarshalText(text []byte) error {
+	fileScanner := bufio.NewScanner(bytes.NewReader(text))
+	fileScanner.Split(bufio.ScanLines)
+
+	var uuid *string
+	var seqno *int
+
+	for fileScanner.Scan() {
+		parts := strings.Split(fileScanner.Text(), "WSREP: Recovered position: ")
+		if len(parts) != 2 {
+			continue
+		}
+		parts = strings.Split(parts[1], ":")
+		if len(parts) != 2 {
+			continue
+		}
+		// TODO: validate UUID
+		parsedUUID := strings.TrimSpace(parts[0])
+		parsedSeqno, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return fmt.Errorf("error parsing seqno: %v", err)
+		}
+		uuid = &parsedUUID
+		seqno = &parsedSeqno
+	}
+	if uuid == nil || seqno == nil {
+		return fmt.Errorf(
+			"unable to parse uuid and seqno: uuid=%v seqno=%v",
+			uuid, seqno,
+		)
+	}
+	r.UUID = *uuid
+	r.Seqno = *seqno
+	return nil
+}
+
+func (r *Recover) Validate() error {
+	if r.UUID == "" || r.Seqno == 0 {
+		return fmt.Errorf("uuid and seqno are mandatory")
+	}
 	return nil
 }
 

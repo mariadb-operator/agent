@@ -21,14 +21,14 @@ innodb_autoinc_lock_mode=2
 [galera]
 wsrep_on=ON
 wsrep_provider=/usr/lib/galera/libgalera_smm.so
-wsrep_cluster_address="gcomm://mariadb-0,mariadb-1"
+wsrep_cluster_address="gcomm://mariadb"
 wsrep_cluster_name="mariadb-galera-cluster"
 wsrep_sst_method=rsync
 wsrep_node_address="${HOSTNAME}"
 wsrep_node_name="${HOSTNAME}"
 EOF
 
-if [ "$HOSTNAME" = "mariadb-0" ] && [ ! -n "$(ls -A /var/lib/mysql)" ]; then 
+if [ ! -n "$(ls -A /var/lib/mysql)" ]; then 
     bash -c "$ENTRYPOINT mariadbd --wsrep-new-cluster"
 else
     bash -c "$ENTRYPOINT mariadbd"

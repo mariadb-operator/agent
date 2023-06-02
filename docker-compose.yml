@@ -1,8 +1,8 @@
 version: "3.3"
 
 services:
-  mariadb-0:
-    container_name: mariadb-0
+  mariadb:
+    container_name: mariadb
     image: mariadb:10.11.3
     pid: host
     command:
@@ -24,30 +24,5 @@ services:
       - "4568"
     volumes:
       - ./hack/galera.sh:/scripts/galera.sh
-      - ./mariadb/config/mariadb-0:/etc/mysql/mariadb.conf.d
-      - ./mariadb/state/mariadb-0:/var/lib/mysql
-  mariadb-1:
-    container_name: mariadb-1
-    image: mariadb:10.11.3
-    pid: host
-    command:
-      - bash
-      - -c
-      - /scripts/galera.sh
-    restart: unless-stopped
-    environment:
-      - HOSTNAME=mariadb-1
-      - MYSQL_TCP_PORT=3306
-      - MARIADB_ROOT_PASSWORD=mariadb
-      - MARIADB_DATABASE=mariadb
-      - MARIADB_USER=mariadb
-      - MARIADB_PASSWORD=mariadb
-    ports:
-      - "3306"
-      - "4444"
-      - "4567"
-      - "4568"
-    volumes:
-      - ./hack/galera.sh:/scripts/galera.sh
-      - ./mariadb/config/mariadb-1:/etc/mysql/mariadb.conf.d
-      - ./mariadb/state/mariadb-1:/var/lib/mysql
+      - ./mariadb/config/docker:/etc/mysql/mariadb.conf.d
+      - ./mariadb/state/docker:/var/lib/mysql

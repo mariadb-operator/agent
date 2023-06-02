@@ -33,7 +33,10 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Hand
 		},
 		Recovery: &Recovery{
 			fileManager: fileManager,
-			logger:      &recoveryLogger,
+			jsonEncoder: &jsonEncoder{
+				logger: &recoveryLogger,
+			},
+			logger: &recoveryLogger,
 		},
 	}
 }

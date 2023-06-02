@@ -29,12 +29,16 @@ func NewFileManager(configDir, stateDir string) (*FileManager, error) {
 	}, nil
 }
 
+func (f *FileManager) WriteStateFile(name string, bytes []byte) error {
+	return os.WriteFile(filepath.Join(f.stateDir, name), bytes, writeFileMode)
+}
+
 func (f *FileManager) ReadStateFile(name string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(f.stateDir, name))
 }
 
-func (f *FileManager) WriteStateFile(name string, bytes []byte) error {
-	return os.WriteFile(filepath.Join(f.stateDir, name), bytes, writeFileMode)
+func (f *FileManager) DeleteStateFile(name string) error {
+	return os.Remove(filepath.Join(f.stateDir, name))
 }
 
 func (f *FileManager) WriteConfigFile(name string, bytes []byte) error {
