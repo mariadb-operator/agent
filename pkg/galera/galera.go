@@ -108,12 +108,12 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 	return nil
 }
 
-type Recover struct {
+type Bootstrap struct {
 	UUID  string `json:"uuid"`
 	Seqno int    `json:"seqno"`
 }
 
-func (r *Recover) UnmarshalText(text []byte) error {
+func (r *Bootstrap) Unmarshal(text []byte) error {
 	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
 
@@ -149,7 +149,7 @@ func (r *Recover) UnmarshalText(text []byte) error {
 	return nil
 }
 
-func (r *Recover) Validate() error {
+func (r *Bootstrap) Validate() error {
 	if r.UUID == "" || r.Seqno == 0 {
 		return fmt.Errorf("uuid and seqno are mandatory")
 	}

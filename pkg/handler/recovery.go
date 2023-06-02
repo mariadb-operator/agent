@@ -41,7 +41,7 @@ func (h *Recovery) Put(w http.ResponseWriter, r *http.Request) {
 		h.logger.Info("mariadbd process reloaded")
 	}
 
-	recover, err := h.recover()
+	bootstrap, err := h.recover()
 	if err != nil {
 		h.logger.Error(err, "error recovering galera")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -54,7 +54,7 @@ func (h *Recovery) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.jsonEncoder.encode(w, recover)
+	h.jsonEncoder.encode(w, bootstrap)
 }
 
 func (h *Recovery) Delete(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func (h *Recovery) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Recovery) recover() (*galera.Recover, error) {
+func (h *Recovery) recover() (*galera.Bootstrap, error) {
 	for i := 0; i < recoverRetries; i++ {
 		time.Sleep(recoverWait)
 
@@ -79,8 +79,8 @@ func (h *Recovery) recover() (*galera.Recover, error) {
 			continue
 		}
 
-		var recover galera.Recover
-		err = recover.UnmarshalText(bytes)
+		var recover galera.Bootstrap
+		err = recover.Unmarshal(bytes)
 		if err == nil {
 			return &recover, nil
 		}

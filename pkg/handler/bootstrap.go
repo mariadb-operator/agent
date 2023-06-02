@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -17,7 +18,19 @@ type Bootstrap struct {
 }
 
 func (h *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
-	if err := h.setSafeToBootstrap(); err != nil {
+	var bootstrap galera.Bootstrap
+	if err := json.NewDecoder(r.Body).Decode(&bootstrap); err != nil {
+		h.logger.Error(err, "error decoding bootstrap")
+		http.Error(w, "invalid body: a bootstrap object must be provided", http.StatusBadRequest)
+		return
+	}
+
+	if err := bootstrap.Validate(); err != nil {
+		http.Error(w, fmt.Sprintf("invalid bootstrap: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.setSafeToBootstrap(&bootstrap); err != nil {
 		h.logger.Error(err, "error setting safe to bootstrap")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -53,7 +66,7 @@ func (h *Bootstrap) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Bootstrap) setSafeToBootstrap() error {
+func (h *Bootstrap) setSafeToBootstrap(bootstrap *galera.Bootstrap) error {
 	bytes, err := h.fileManager.ReadStateFile(galera.GaleraStateFileName)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -67,6 +80,8 @@ func (h *Bootstrap) setSafeToBootstrap() error {
 		return fmt.Errorf("error unmarshaling galera state: %v", err)
 	}
 
+	galeraState.UUID = bootstrap.UUID
+	galeraState.Seqno = bootstrap.Seqno
 	galeraState.SafeToBootstrap = true
 	bytes, err = galeraState.MarshalText()
 	if err != nil {
