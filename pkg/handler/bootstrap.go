@@ -21,12 +21,7 @@ func (h *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 	var bootstrap galera.Bootstrap
 	if err := json.NewDecoder(r.Body).Decode(&bootstrap); err != nil {
 		h.logger.Error(err, "error decoding bootstrap")
-		http.Error(w, "invalid body: a bootstrap object must be provided", http.StatusBadRequest)
-		return
-	}
-
-	if err := bootstrap.Validate(); err != nil {
-		http.Error(w, fmt.Sprintf("invalid bootstrap: %v", err), http.StatusBadRequest)
+		http.Error(w, "invalid body: a valid bootstrap object must be provided", http.StatusBadRequest)
 		return
 	}
 
