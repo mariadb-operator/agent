@@ -14,31 +14,31 @@ import (
 )
 
 var (
-	defaultMariadbdRetryOpts = mariadbd.RetryOptions{
+	defaultMariadbdReloadOpts = mariadbd.ReloadOptions{
 		Retries:   10,
 		WaitRetry: 1 * time.Second,
 	}
 )
 
 type Bootstrap struct {
-	fileManager          *filemanager.FileManager
-	logger               *logr.Logger
-	mariadbdRetryOptions *mariadbd.RetryOptions
+	fileManager           *filemanager.FileManager
+	logger                *logr.Logger
+	mariadbdReloadOptions *mariadbd.ReloadOptions
 }
 
 type Option func(*Bootstrap)
 
-func WithMariadbdRetry(opts *mariadbd.RetryOptions) Option {
+func WithMariadbdReload(opts *mariadbd.ReloadOptions) Option {
 	return func(b *Bootstrap) {
-		b.mariadbdRetryOptions = opts
+		b.mariadbdReloadOptions = opts
 	}
 }
 
 func NewBootstrap(fileManager *filemanager.FileManager, logger *logr.Logger, opts ...Option) *Bootstrap {
 	bootstrap := &Bootstrap{
-		fileManager:          fileManager,
-		logger:               logger,
-		mariadbdRetryOptions: &defaultMariadbdRetryOpts,
+		fileManager:           fileManager,
+		logger:                logger,
+		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
 	}
 	for _, setOpts := range opts {
 		setOpts(bootstrap)
@@ -78,7 +78,7 @@ func (b *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	b.logger.Info("reloading mariadbd process")
-	if err := mariadbd.ReloadWithRetries(b.mariadbdRetryOptions); err != nil {
+	if err := mariadbd.ReloadWithOptions(b.mariadbdReloadOptions); err != nil {
 		b.logger.Error(err, "error reloading mariadbd process")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return

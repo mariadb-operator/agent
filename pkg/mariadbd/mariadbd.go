@@ -33,12 +33,12 @@ func Reload() error {
 	return errProcessNotFound
 }
 
-type RetryOptions struct {
+type ReloadOptions struct {
 	Retries   int
 	WaitRetry time.Duration
 }
 
-func ReloadWithRetries(opts *RetryOptions) error {
+func ReloadWithOptions(opts *ReloadOptions) error {
 	for i := 0; i < opts.Retries; i++ {
 		err := Reload()
 		if err == nil {

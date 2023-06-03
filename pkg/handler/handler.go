@@ -7,7 +7,6 @@ import (
 	"github.com/mariadb-operator/agent/pkg/handler/galerastate"
 	"github.com/mariadb-operator/agent/pkg/handler/jsonencoder"
 	"github.com/mariadb-operator/agent/pkg/handler/recovery"
-	"github.com/mariadb-operator/agent/pkg/mariadbd"
 )
 
 type Handler struct {
@@ -23,21 +22,15 @@ type Options struct {
 
 type Option func(*Options)
 
-func WithBootstrapMariadbRetryOptions(opts *mariadbd.RetryOptions) Option {
+func WithBootstrapOptions(opts ...bootstrap.Option) Option {
 	return func(o *Options) {
-		o.bootstrap = append(o.bootstrap, bootstrap.WithMariadbdRetry(opts))
+		o.bootstrap = append(o.bootstrap, opts...)
 	}
 }
 
-func WithRecoveryMariadbRetryOptions(opts *mariadbd.RetryOptions) Option {
+func WithRecoveryOptions(opts ...recovery.Option) Option {
 	return func(o *Options) {
-		o.recovery = append(o.recovery, recovery.WithMariadbdRetry(opts))
-	}
-}
-
-func WithRecoveryRetryOptions(opts *recovery.RecoverRetryOptions) Option {
-	return func(o *Options) {
-		o.recovery = append(o.recovery, recovery.WithRecoverRetry(opts))
+		o.recovery = append(o.recovery, opts...)
 	}
 }
 
@@ -46,7 +39,6 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, handl
 	for _, setOpts := range handlerOpts {
 		setOpts(opts)
 	}
-
 	bootstrapLogger := logger.WithName("bootstrap")
 	galeraStateLogger := logger.WithName("galerastate")
 	recoveryLogger := logger.WithName("recovery")

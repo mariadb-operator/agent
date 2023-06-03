@@ -14,51 +14,51 @@ import (
 )
 
 var (
-	defaultMariadbdRetryOpts = mariadbd.RetryOptions{
+	defaultMariadbdReloadOpts = mariadbd.ReloadOptions{
 		Retries:   3,
 		WaitRetry: 1 * time.Second,
 	}
-	defaultRecoverRetryOpts = RecoverRetryOptions{
+	defaultRecoveryOpts = RecoveryOptions{
 		Retries:   10,
 		WaitRetry: 3 * time.Second,
 	}
 )
 
-type RecoverRetryOptions struct {
+type RecoveryOptions struct {
 	Retries   int
 	WaitRetry time.Duration
 }
 
 type Recovery struct {
-	fileManager          *filemanager.FileManager
-	jsonEncoder          *jsonencoder.JSONEncoder
-	logger               *logr.Logger
-	mariadbdRetryOptions *mariadbd.RetryOptions
-	recoverRetryOptions  *RecoverRetryOptions
+	fileManager           *filemanager.FileManager
+	jsonEncoder           *jsonencoder.JSONEncoder
+	logger                *logr.Logger
+	mariadbdReloadOptions *mariadbd.ReloadOptions
+	recoveryOptions       *RecoveryOptions
 }
 
 type Option func(*Recovery)
 
-func WithMariadbdRetry(opts *mariadbd.RetryOptions) Option {
+func WithMariadbdReload(opts *mariadbd.ReloadOptions) Option {
 	return func(b *Recovery) {
-		b.mariadbdRetryOptions = opts
+		b.mariadbdReloadOptions = opts
 	}
 }
 
-func WithRecoverRetry(opts *RecoverRetryOptions) Option {
+func WithRecovery(opts *RecoveryOptions) Option {
 	return func(r *Recovery) {
-		r.recoverRetryOptions = opts
+		r.recoveryOptions = opts
 	}
 }
 
 func NewRecover(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, logger *logr.Logger,
 	opts ...Option) *Recovery {
 	recovery := &Recovery{
-		fileManager:          fileManager,
-		jsonEncoder:          jsonEncoder,
-		logger:               logger,
-		mariadbdRetryOptions: &defaultMariadbdRetryOpts,
-		recoverRetryOptions:  &defaultRecoverRetryOpts,
+		fileManager:           fileManager,
+		jsonEncoder:           jsonEncoder,
+		logger:                logger,
+		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
+		recoveryOptions:       &defaultRecoveryOpts,
 	}
 	for _, setOpts := range opts {
 		setOpts(recovery)
@@ -86,7 +86,7 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 	}
 
 	r.logger.Info("reloading mariadbd process")
-	if err := mariadbd.ReloadWithRetries(r.mariadbdRetryOptions); err != nil {
+	if err := mariadbd.ReloadWithOptions(r.mariadbdReloadOptions); err != nil {
 		r.logger.Error(err, "error reloading mariadbd process")
 	} else {
 		r.logger.Info("mariadbd process reloaded")
@@ -121,12 +121,12 @@ func (r *Recovery) Delete(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Recovery) recover() (*galera.Bootstrap, error) {
-	for i := 0; i < r.recoverRetryOptions.Retries; i++ {
-		time.Sleep(r.recoverRetryOptions.WaitRetry)
+	for i := 0; i < r.recoveryOptions.Retries; i++ {
+		time.Sleep(r.recoveryOptions.WaitRetry)
 
 		bytes, err := r.fileManager.ReadStateFile(galera.RecoveryLogFileName)
 		if err != nil {
-			r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoverRetryOptions.Retries)
+			r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoveryOptions.Retries)
 			continue
 		}
 
@@ -136,7 +136,7 @@ func (r *Recovery) recover() (*galera.Bootstrap, error) {
 			return &recover, nil
 		}
 
-		r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoverRetryOptions.Retries)
+		r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoveryOptions.Retries)
 	}
-	return nil, fmt.Errorf("maximum retries (%d) reached attempting to recover galera from recovery log", r.recoverRetryOptions.Retries)
+	return nil, fmt.Errorf("maximum retries (%d) reached attempting to recover galera from recovery log", r.recoveryOptions.Retries)
 }

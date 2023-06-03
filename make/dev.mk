@@ -34,13 +34,15 @@ state: ## Copies a example state file for development purposes.
 	@mkdir -p $(STATE_DIR)
 	cp "examples/$(STATE_FILE)" "$(STATE_DIR)/grastate.dat"
 
-RUN_FLAGS ?= --log-dev --config-dir=$(CONFIG_DIR) --state-dir=$(STATE_DIR)
+BASE_RUN_FLAGS ?= --log-dev
+
+RUN_FLAGS ?= $(BASE_RUN_FLAGS) --config-dir=$(CONFIG_DIR) --state-dir=$(STATE_DIR)
 .PHONY: run
 run: config state ## Run agent from your host.
 	go run main.go $(RUN_FLAGS)
 
 AGENT ?= $(LOCALBIN)/agent
-SU_RUN_FLAGS ?= --log-dev --config-dir=mariadb/config/docker --state-dir=mariadb/state/docker 
+SU_RUN_FLAGS ?= $(BASE_RUN_FLAGS) --config-dir=mariadb/config/docker --state-dir=mariadb/state/docker 
 .PHONY: su-run
 su-run: build ## Run agent from your host as root to be able to access mariadb volumes and process.
 	sudo $(AGENT) $(SU_RUN_FLAGS)
