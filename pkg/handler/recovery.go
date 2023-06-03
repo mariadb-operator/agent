@@ -13,8 +13,10 @@ import (
 )
 
 var (
-	recoverRetries = 10
-	recoverWait    = 3 * time.Second
+	recoverMariadbdReloadRetries = 3
+	recoverMariadbdReloadWait    = 1 * time.Second
+	recoverRetries               = 10
+	recoverWait                  = 3 * time.Second
 )
 
 type Recovery struct {
@@ -35,7 +37,7 @@ func (h *Recovery) Put(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.Info("reloading mariadbd process")
-	if err := mariadbd.Reload(); err != nil {
+	if err := mariadbd.ReloadWithRetries(recoverMariadbdReloadRetries, recoverMariadbdReloadWait); err != nil {
 		h.logger.Error(err, "error reloading mariadbd process")
 	} else {
 		h.logger.Info("mariadbd process reloaded")
