@@ -33,18 +33,22 @@ func Reload() error {
 	return errProcessNotFound
 }
 
-func ReloadWithRetries(retries int, waitRetry time.Duration) error {
-	for i := 0; i < retries; i++ {
+type RetryOptions struct {
+	Retries   int
+	WaitRetry time.Duration
+}
+
+func ReloadWithRetries(opts *RetryOptions) error {
+	for i := 0; i < opts.Retries; i++ {
 		err := Reload()
 		if err == nil {
 			return nil
 		}
 		if errors.Is(err, errProcessNotFound) {
-			time.Sleep(waitRetry)
+			time.Sleep(opts.WaitRetry)
 			continue
 		}
 		return err
 	}
-	return fmt.Errorf("maximum retries (%d) reached attempting to reload '%s' process", retries, mariadbdProcessName)
-
+	return fmt.Errorf("maximum retries (%d) reached attempting to reload '%s' process", opts.Retries, mariadbdProcessName)
 }

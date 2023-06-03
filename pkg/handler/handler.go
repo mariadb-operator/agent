@@ -1,56 +1,63 @@
 package handler
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"github.com/go-logr/logr"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
+	"github.com/mariadb-operator/agent/pkg/handler/bootstrap"
+	"github.com/mariadb-operator/agent/pkg/handler/galerastate"
+	"github.com/mariadb-operator/agent/pkg/handler/jsonencoder"
+	"github.com/mariadb-operator/agent/pkg/handler/recovery"
+	"github.com/mariadb-operator/agent/pkg/mariadbd"
 )
 
 type Handler struct {
-	Bootstrap   *Bootstrap
-	GaleraState *GaleraState
-	Recovery    *Recovery
+	Bootstrap   *bootstrap.Bootstrap
+	GaleraState *galerastate.GaleraState
+	Recovery    *recovery.Recovery
 }
 
-func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger) *Handler {
-	galeraStateLogger := logger.WithName("galerastate")
+type Options struct {
+	bootstrap []bootstrap.Option
+	recovery  []recovery.Option
+}
+
+type Option func(*Options)
+
+func WithBootstrapMariadbRetryOptions(opts *mariadbd.RetryOptions) Option {
+	return func(o *Options) {
+		o.bootstrap = append(o.bootstrap, bootstrap.WithMariadbdRetry(opts))
+	}
+}
+
+func WithRecoveryMariadbRetryOptions(opts *mariadbd.RetryOptions) Option {
+	return func(o *Options) {
+		o.recovery = append(o.recovery, recovery.WithMariadbdRetry(opts))
+	}
+}
+
+func WithRecoveryRetryOptions(opts *recovery.RecoverRetryOptions) Option {
+	return func(o *Options) {
+		o.recovery = append(o.recovery, recovery.WithRecoverRetry(opts))
+	}
+}
+
+func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, handlerOpts ...Option) *Handler {
+	opts := &Options{}
+	for _, setOpts := range handlerOpts {
+		setOpts(opts)
+	}
+
 	bootstrapLogger := logger.WithName("bootstrap")
+	galeraStateLogger := logger.WithName("galerastate")
 	recoveryLogger := logger.WithName("recovery")
 
+	bootstrap := bootstrap.NewBootstrap(fileManager, &bootstrapLogger, opts.bootstrap...)
+	galerastate := galerastate.NewGaleraState(fileManager, jsonencoder.NewJSONEncoder(&galeraStateLogger), &galeraStateLogger)
+	recovery := recovery.NewRecover(fileManager, jsonencoder.NewJSONEncoder(&recoveryLogger), &recoveryLogger, opts.recovery...)
+
 	return &Handler{
-		Bootstrap: &Bootstrap{
-			fileManager: fileManager,
-			logger:      &bootstrapLogger,
-		},
-		GaleraState: &GaleraState{
-			fileManager: fileManager,
-			jsonEncoder: &jsonEncoder{
-				logger: &galeraStateLogger,
-			},
-			logger: &galeraStateLogger,
-		},
-		Recovery: &Recovery{
-			fileManager: fileManager,
-			jsonEncoder: &jsonEncoder{
-				logger: &recoveryLogger,
-			},
-			logger: &recoveryLogger,
-		},
+		Bootstrap:   bootstrap,
+		GaleraState: galerastate,
+		Recovery:    recovery,
 	}
-}
-
-type jsonEncoder struct {
-	logger *logr.Logger
-}
-
-func (j *jsonEncoder) encode(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		j.logger.Error(err, "error encoding json")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
 }
