@@ -20,7 +20,6 @@ func Reload() error {
 	if err != nil {
 		return fmt.Errorf("error getting processes: %v", err)
 	}
-
 	for _, p := range processes {
 		if p.Executable() == mariadbdProcessName {
 			if err := syscall.Kill(p.Pid(), reloadSysCall); err != nil {
@@ -29,7 +28,6 @@ func Reload() error {
 			return nil
 		}
 	}
-
 	return errProcessNotFound
 }
 

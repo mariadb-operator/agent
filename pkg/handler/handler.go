@@ -7,8 +7,8 @@ import (
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler/bootstrap"
 	"github.com/mariadb-operator/agent/pkg/handler/galerastate"
-	"github.com/mariadb-operator/agent/pkg/handler/jsonencoder"
 	"github.com/mariadb-operator/agent/pkg/handler/recovery"
+	"github.com/mariadb-operator/agent/pkg/responsewriter"
 )
 
 type Handler struct {
@@ -49,19 +49,20 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, handl
 
 	bootstrap := bootstrap.NewBootstrap(
 		fileManager,
+		responsewriter.NewResponseWriter(&bootstrapLogger),
 		mux,
 		&bootstrapLogger,
 		opts.bootstrap...,
 	)
 	galerastate := galerastate.NewGaleraState(
 		fileManager,
-		jsonencoder.NewJSONEncoder(&galeraStateLogger),
+		responsewriter.NewResponseWriter(&galeraStateLogger),
 		mux.RLocker(),
 		&galeraStateLogger,
 	)
 	recovery := recovery.NewRecover(
 		fileManager,
-		jsonencoder.NewJSONEncoder(&recoveryLogger),
+		responsewriter.NewResponseWriter(&recoveryLogger),
 		mux,
 		&recoveryLogger,
 		opts.recovery...,

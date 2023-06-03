@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/mariadb-operator/agent/pkg/errors"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/galera"
-	"github.com/mariadb-operator/agent/pkg/handler/jsonencoder"
 	"github.com/mariadb-operator/agent/pkg/mariadbd"
+	"github.com/mariadb-operator/agent/pkg/responsewriter"
 )
 
 var (
@@ -32,7 +33,7 @@ type RecoveryOptions struct {
 
 type Recovery struct {
 	fileManager           *filemanager.FileManager
-	jsonEncoder           *jsonencoder.JSONEncoder
+	responseWriter        *responsewriter.ResponseWriter
 	locker                sync.Locker
 	logger                *logr.Logger
 	mariadbdReloadOptions *mariadbd.ReloadOptions
@@ -53,11 +54,11 @@ func WithRecovery(opts *RecoveryOptions) Option {
 	}
 }
 
-func NewRecover(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, locker sync.Locker, logger *logr.Logger,
-	opts ...Option) *Recovery {
+func NewRecover(fileManager *filemanager.FileManager, responseWriter *responsewriter.ResponseWriter, locker sync.Locker,
+	logger *logr.Logger, opts ...Option) *Recovery {
 	recovery := &Recovery{
 		fileManager:           fileManager,
-		jsonEncoder:           jsonEncoder,
+		responseWriter:        responseWriter,
 		locker:                locker,
 		logger:                logger,
 		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
@@ -75,20 +76,17 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 	r.logger.V(1).Info("starting recovery")
 
 	if err := r.fileManager.DeleteConfigFile(galera.BootstrapFileName); err != nil && !os.IsNotExist(err) {
-		r.logger.Error(err, "error deleting existing bootstrap config")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error deleting existing bootstrap config: %v", err)
 		return
 	}
 
 	if err := r.fileManager.DeleteStateFile(galera.RecoveryLogFileName); err != nil && !os.IsNotExist(err) {
-		r.logger.Error(err, "error deleting existing recovery log")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error deleting existing recovery log: %v", err)
 		return
 	}
 
 	if err := r.fileManager.WriteConfigFile(galera.RecoveryFileName, []byte(galera.RecoveryFile)); err != nil {
-		r.logger.Error(err, "error writing recovery config")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error writing recovery config: %v", err)
 		return
 	}
 
@@ -101,28 +99,26 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 
 	bootstrap, err := r.recover()
 	if err != nil {
-		r.logger.Error(err, "error recovering galera")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error recovering galera: %v", err)
 		return
 	}
 
 	if err := r.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil {
-		r.logger.Error(err, "error deleting recovery file")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error deleting recovery config: %v", err)
 		return
 	}
 
 	r.logger.V(1).Info("finished recovery")
-	r.jsonEncoder.Encode(w, bootstrap)
+	r.responseWriter.WriteOK(w, bootstrap)
 }
 
 func (r *Recovery) Delete(w http.ResponseWriter, req *http.Request) {
 	if err := r.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil {
 		if os.IsNotExist(err) {
-			http.Error(w, "Not found", http.StatusNotFound)
+			r.responseWriter.Write(w, errors.NewAPIError("recovery config not found"), http.StatusNotFound)
 			return
 		}
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		r.responseWriter.WriteErrorf(w, "error deleting recovery config: %v", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
