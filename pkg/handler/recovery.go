@@ -26,8 +26,16 @@ type Recovery struct {
 }
 
 func (h *Recovery) Put(w http.ResponseWriter, r *http.Request) {
-	if err := h.fileManager.DeleteStateFile(galera.RecoveryLog); err != nil && !os.IsNotExist(err) {
+	if err := h.fileManager.DeleteConfigFile(galera.BootstrapFileName); err != nil && !os.IsNotExist(err) {
+		h.logger.Error(err, "error deleting existing bootstrap config")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.fileManager.DeleteStateFile(galera.RecoveryLogFileName); err != nil && !os.IsNotExist(err) {
 		h.logger.Error(err, "error deleting existing recovery log")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
 
 	if err := h.fileManager.WriteConfigFile(galera.RecoveryFileName, []byte(galera.RecoveryFile)); err != nil {
@@ -75,7 +83,7 @@ func (h *Recovery) recover() (*galera.Bootstrap, error) {
 	for i := 0; i < recoverRetries; i++ {
 		time.Sleep(recoverWait)
 
-		bytes, err := h.fileManager.ReadStateFile(galera.RecoveryLog)
+		bytes, err := h.fileManager.ReadStateFile(galera.RecoveryLogFileName)
 		if err != nil {
 			h.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", recoverRetries)
 			continue

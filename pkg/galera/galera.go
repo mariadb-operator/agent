@@ -16,11 +16,11 @@ var (
 	BootstrapFileName   = "1-bootstrap.cnf"
 	BootstrapFile       = `[galera]
 wsrep_new_cluster="ON"`
-	RecoveryFileName = "2-recovery.cnf"
-	RecoveryLog      = "mariadb.err"
-	RecoveryFile     = fmt.Sprintf(`[galera]
+	RecoveryFileName    = "2-recovery.cnf"
+	RecoveryLogFileName = "mariadb.err"
+	RecoveryFile        = fmt.Sprintf(`[galera]
 log_error=%s
-wsrep_recover="ON"`, RecoveryLog)
+wsrep_recover="ON"`, RecoveryLogFileName)
 )
 
 type GaleraState struct {

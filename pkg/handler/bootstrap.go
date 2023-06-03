@@ -36,6 +36,12 @@ func (h *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil && !os.IsNotExist(err) {
+		h.logger.Error(err, "error deleting existing recovery config")
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	if err := h.setSafeToBootstrap(&bootstrap); err != nil {
 		h.logger.Error(err, "error setting safe to bootstrap")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
