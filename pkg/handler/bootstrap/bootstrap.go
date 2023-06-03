@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -22,6 +23,7 @@ var (
 
 type Bootstrap struct {
 	fileManager           *filemanager.FileManager
+	locker                sync.Locker
 	logger                *logr.Logger
 	mariadbdReloadOptions *mariadbd.ReloadOptions
 }
@@ -34,9 +36,10 @@ func WithMariadbdReload(opts *mariadbd.ReloadOptions) Option {
 	}
 }
 
-func NewBootstrap(fileManager *filemanager.FileManager, logger *logr.Logger, opts ...Option) *Bootstrap {
+func NewBootstrap(fileManager *filemanager.FileManager, locker sync.Locker, logger *logr.Logger, opts ...Option) *Bootstrap {
 	bootstrap := &Bootstrap{
 		fileManager:           fileManager,
+		locker:                locker,
 		logger:                logger,
 		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
 	}
@@ -58,6 +61,9 @@ func (b *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("invalid bootstrap: %v", err), http.StatusBadRequest)
 		return
 	}
+	b.locker.Lock()
+	defer b.locker.Unlock()
+	b.logger.V(1).Info("enabling bootstrap")
 
 	if err := b.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil && !os.IsNotExist(err) {
 		b.logger.Error(err, "error deleting existing recovery config")
@@ -89,6 +95,10 @@ func (b *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *Bootstrap) Delete(w http.ResponseWriter, r *http.Request) {
+	b.locker.Lock()
+	defer b.locker.Unlock()
+	b.logger.V(1).Info("disabling bootstrap")
+
 	if err := b.fileManager.DeleteConfigFile(galera.BootstrapFileName); err != nil {
 		if os.IsNotExist(err) {
 			http.Error(w, "Not found", http.StatusNotFound)

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"sync"
+
 	"github.com/go-logr/logr"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler/bootstrap"
@@ -39,13 +41,31 @@ func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, handl
 	for _, setOpts := range handlerOpts {
 		setOpts(opts)
 	}
+
+	mux := &sync.RWMutex{}
 	bootstrapLogger := logger.WithName("bootstrap")
 	galeraStateLogger := logger.WithName("galerastate")
 	recoveryLogger := logger.WithName("recovery")
 
-	bootstrap := bootstrap.NewBootstrap(fileManager, &bootstrapLogger, opts.bootstrap...)
-	galerastate := galerastate.NewGaleraState(fileManager, jsonencoder.NewJSONEncoder(&galeraStateLogger), &galeraStateLogger)
-	recovery := recovery.NewRecover(fileManager, jsonencoder.NewJSONEncoder(&recoveryLogger), &recoveryLogger, opts.recovery...)
+	bootstrap := bootstrap.NewBootstrap(
+		fileManager,
+		mux,
+		&bootstrapLogger,
+		opts.bootstrap...,
+	)
+	galerastate := galerastate.NewGaleraState(
+		fileManager,
+		jsonencoder.NewJSONEncoder(&galeraStateLogger),
+		mux.RLocker(),
+		&galeraStateLogger,
+	)
+	recovery := recovery.NewRecover(
+		fileManager,
+		jsonencoder.NewJSONEncoder(&recoveryLogger),
+		mux,
+		&recoveryLogger,
+		opts.recovery...,
+	)
 
 	return &Handler{
 		Bootstrap:   bootstrap,

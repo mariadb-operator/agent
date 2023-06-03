@@ -3,6 +3,7 @@ package galerastate
 import (
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
@@ -13,18 +14,25 @@ import (
 type GaleraState struct {
 	fileManager *filemanager.FileManager
 	jsonEncoder *jsonencoder.JSONEncoder
+	locker      sync.Locker
 	logger      *logr.Logger
 }
 
-func NewGaleraState(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, logger *logr.Logger) *GaleraState {
+func NewGaleraState(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, locker sync.Locker,
+	logger *logr.Logger) *GaleraState {
 	return &GaleraState{
 		fileManager: fileManager,
 		jsonEncoder: jsonEncoder,
+		locker:      locker,
 		logger:      logger,
 	}
 }
 
 func (g *GaleraState) Get(w http.ResponseWriter, r *http.Request) {
+	g.locker.Lock()
+	defer g.locker.Unlock()
+	g.logger.V(1).Info("getting galera state")
+
 	bytes, err := g.fileManager.ReadStateFile(galera.GaleraStateFileName)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -34,7 +34,7 @@ state: ## Copies a example state file for development purposes.
 	@mkdir -p $(STATE_DIR)
 	cp "examples/$(STATE_FILE)" "$(STATE_DIR)/grastate.dat"
 
-BASE_RUN_FLAGS ?= --log-dev
+BASE_RUN_FLAGS ?= --log-level=debug --log-dev
 
 RUN_FLAGS ?= $(BASE_RUN_FLAGS) --config-dir=$(CONFIG_DIR) --state-dir=$(STATE_DIR)
 .PHONY: run

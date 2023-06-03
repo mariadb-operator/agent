@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -32,6 +33,7 @@ type RecoveryOptions struct {
 type Recovery struct {
 	fileManager           *filemanager.FileManager
 	jsonEncoder           *jsonencoder.JSONEncoder
+	locker                sync.Locker
 	logger                *logr.Logger
 	mariadbdReloadOptions *mariadbd.ReloadOptions
 	recoveryOptions       *RecoveryOptions
@@ -51,11 +53,12 @@ func WithRecovery(opts *RecoveryOptions) Option {
 	}
 }
 
-func NewRecover(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, logger *logr.Logger,
+func NewRecover(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.JSONEncoder, locker sync.Locker, logger *logr.Logger,
 	opts ...Option) *Recovery {
 	recovery := &Recovery{
 		fileManager:           fileManager,
 		jsonEncoder:           jsonEncoder,
+		locker:                locker,
 		logger:                logger,
 		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
 		recoveryOptions:       &defaultRecoveryOpts,
@@ -67,6 +70,10 @@ func NewRecover(fileManager *filemanager.FileManager, jsonEncoder *jsonencoder.J
 }
 
 func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	r.logger.V(1).Info("starting recovery")
+
 	if err := r.fileManager.DeleteConfigFile(galera.BootstrapFileName); err != nil && !os.IsNotExist(err) {
 		r.logger.Error(err, "error deleting existing bootstrap config")
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -105,6 +112,7 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	r.logger.V(1).Info("finished recovery")
 	r.jsonEncoder.Encode(w, bootstrap)
 }
 
