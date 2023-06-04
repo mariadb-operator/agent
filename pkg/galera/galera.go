@@ -31,6 +31,9 @@ type GaleraState struct {
 }
 
 func (g *GaleraState) Marshal() ([]byte, error) {
+	if _, err := guuid.Parse(g.UUID); err != nil {
+		return nil, fmt.Errorf("invalid uuid: %v", err)
+	}
 	type tplOpts struct {
 		Version         string
 		UUID            string
