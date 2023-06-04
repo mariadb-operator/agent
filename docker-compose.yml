@@ -5,6 +5,7 @@ services:
     container_name: mariadb
     image: mariadb:10.11.3
     pid: host
+    user: ${CURRENT_UID}
     command:
       - bash
       - -c
@@ -24,5 +25,5 @@ services:
       - "4568"
     volumes:
       - ./hack/galera.sh:/scripts/galera.sh
-      - ./mariadb/config/docker:/etc/mysql/mariadb.conf.d
-      - ./mariadb/state/docker:/var/lib/mysql
+      - ./mariadb/config:/etc/mysql/mariadb.conf.d
+      - ./mariadb/state:/var/lib/mysql

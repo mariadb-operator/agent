@@ -1,3 +1,0 @@
-[galera]
-log_error=mariadb.err
-wsrep_recover="ON"

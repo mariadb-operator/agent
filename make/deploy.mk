@@ -27,14 +27,18 @@ docker-inspect: ## Inspect docker image.
 
 ##@ MariaDB
 
+CURRENT_UID ?= $(shell id -u):$(shell id -g)
+CURRENT_USER ?= $(shell whoami):$(shell whoami)
+
 .PHONY: mariadb
 mariadb: ## Create a MariaDB galera cluster using docker compose.
-	docker compose up -d
+	CURRENT_UID=$(CURRENT_UID) docker compose up -d
+	sudo chown -R $(CURRENT_USER) mariadb
 
 .PHONY: mariadb-rm
 mariadb-rm: ## Remove the MariaDB galera cluster.
-	docker compose rm --stop --force
-	sudo rm -rf mariadb
+	CURRENT_UID=$(CURRENT_UID) docker compose rm --stop --force
+	rm -rf mariadb
 
 .PHONY: mariadb-logs
 mariadb-logs: ## Check the MariaDB galera cluster logs.
