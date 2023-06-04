@@ -20,9 +20,7 @@ cover: test ## Run tests and generate coverage.
 release: goreleaser ## Test release locally.
 	$(GORELEASER) release --snapshot --rm-dist
 
-RUN_FLAGS ?= --log-level=debug --log-dev --config-dir=mariadb/config --state-dir=mariadb/state 
-
-RUN_FLAGS ?= $(BASE_RUN_FLAGS) --config-dir=$(CONFIG_DIR) --state-dir=$(STATE_DIR)
+RUN_FLAGS ?= --log-level=debug --log-dev --config-dir=mariadb/config --state-dir=mariadb/state
 .PHONY: run
 run: ## Run agent from your host.
 	go run main.go $(RUN_FLAGS)

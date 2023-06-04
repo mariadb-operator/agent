@@ -55,6 +55,6 @@ cluster-ctx: ## Sets cluster context.
 mariadb: ## Create a MariaDB galera in kind.
 	@./hack/mariadb.sh
 
-.PHONY: mariadb-rm
-mariadb-rm: ## Delete the MariaDB galera cluster.
-	@./hack/mariadb-rm.sh
+.PHONY: mariadb-delete
+mariadb-delete: ## Delete the MariaDB galera cluster.
+	@./hack/mariadb-delete.sh
