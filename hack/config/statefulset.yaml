@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/instance: mariadb
+    app.kubernetes.io/name: mariadb
+  name: mariadb
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: mariadb
+      app.kubernetes.io/name: mariadb
+  serviceName: mariadb-headless
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: mariadb
+        app.kubernetes.io/name: mariadb
+      name: mariadb
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: mariadb
+          image: mariadb:10.11.3
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - /scripts/entrypoint.sh
+          env:
+            - name: MYSQL_TCP_PORT
+              value: "3306"
+            - name: MARIADB_ROOT_PASSWORD
+              value: mariadb
+            - name: MARIADB_ROOT_HOST
+              value: "%"
+            - name: MARIADB_DATABASE
+              value: mariadb
+            - name: MARIADB_USER
+              value: mariadb
+            - name: MARIADB_PASSWORD
+              value: mariadb
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - mysql -u root -p${MARIADB_ROOT_PASSWORD} -e "SHOW STATUS LIKE 'wsrep_ready'" | grep -c ON
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - bash
+                - -ec
+                - mysql -u root -p${MARIADB_ROOT_PASSWORD} -e "SELECT 1;"
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+          ports:
+            - containerPort: 3306
+              protocol: TCP
+            - containerPort: 4444
+              protocol: TCP
+            - containerPort: 4567
+              protocol: TCP
+            - containerPort: 4568
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 300m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: config
+              mountPath: /etc/mysql/mariadb.conf.d       
+            - name: state
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: scripts
+          configMap:
+            name: scripts
+            defaultMode: 0777
+        - name: config
+          hostPath:
+            path: /etc/mysql/mariadb.conf.d
+            type: Directory
+        - name: state
+          hostPath:
+            path: /var/lib/mysql
+            type: Directory
+                    
