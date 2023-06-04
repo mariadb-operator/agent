@@ -9,10 +9,13 @@ import (
 	"github.com/mitchellh/go-ps"
 )
 
-var (
+const (
 	mariadbdProcessName = "mariadbd"
 	reloadSysCall       = syscall.SIGKILL
-	errProcessNotFound  = fmt.Errorf("process '%s' not found", mariadbdProcessName)
+)
+
+var (
+	errProcessNotFound = fmt.Errorf("process '%s' not found", mariadbdProcessName)
 )
 
 func Reload() error {

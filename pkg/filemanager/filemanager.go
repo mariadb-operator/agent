@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-var (
+const (
 	writeFileMode = fs.FileMode(0777)
 )
 
