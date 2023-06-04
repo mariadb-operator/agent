@@ -73,7 +73,7 @@ func NewRecover(fileManager *filemanager.FileManager, responseWriter *responsewr
 func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 	r.locker.Lock()
 	defer r.locker.Unlock()
-	r.logger.V(1).Info("starting recovery")
+	r.logger.V(1).Info("enabling recovery")
 
 	if err := r.fileManager.DeleteConfigFile(galera.BootstrapFileName); err != nil && !os.IsNotExist(err) {
 		r.responseWriter.WriteErrorf(w, "error deleting existing bootstrap config: %v", err)
@@ -89,12 +89,22 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 		r.responseWriter.WriteErrorf(w, "error writing recovery config: %v", err)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
 
-	r.logger.Info("reloading mariadbd process")
-	if err := mariadbd.ReloadWithOptions(r.mariadbdReloadOptions); err != nil {
-		r.logger.Error(err, "error reloading mariadbd process")
-	} else {
-		r.logger.Info("mariadbd process reloaded")
+func (r *Recovery) Post(w http.ResponseWriter, req *http.Request) {
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	r.logger.V(1).Info("starting recovery")
+
+	exists, err := r.fileManager.ConfigFileExists(galera.RecoveryFileName)
+	if err != nil {
+		r.responseWriter.WriteErrorf(w, "error checking recovery config: %v", err)
+		return
+	}
+	if !exists {
+		r.responseWriter.Write(w, errors.NewAPIError("recovery config not found"), http.StatusNotFound)
+		return
 	}
 
 	bootstrap, err := r.recover()
@@ -102,17 +112,14 @@ func (r *Recovery) Put(w http.ResponseWriter, req *http.Request) {
 		r.responseWriter.WriteErrorf(w, "error recovering galera: %v", err)
 		return
 	}
-
-	if err := r.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil {
-		r.responseWriter.WriteErrorf(w, "error deleting recovery config: %v", err)
-		return
-	}
-
-	r.logger.V(1).Info("finished recovery")
 	r.responseWriter.WriteOK(w, bootstrap)
 }
 
 func (r *Recovery) Delete(w http.ResponseWriter, req *http.Request) {
+	r.locker.Lock()
+	defer r.locker.Unlock()
+	r.logger.V(1).Info("disabling recovery")
+
 	if err := r.fileManager.DeleteConfigFile(galera.RecoveryFileName); err != nil {
 		if os.IsNotExist(err) {
 			r.responseWriter.Write(w, errors.NewAPIError("recovery config not found"), http.StatusNotFound)

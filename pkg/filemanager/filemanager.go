@@ -48,3 +48,13 @@ func (f *FileManager) WriteConfigFile(name string, bytes []byte) error {
 func (f *FileManager) DeleteConfigFile(name string) error {
 	return os.Remove(filepath.Join(f.configDir, name))
 }
+
+func (f *FileManager) ConfigFileExists(name string) (bool, error) {
+	if _, err := os.Stat(filepath.Join(f.configDir, name)); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}

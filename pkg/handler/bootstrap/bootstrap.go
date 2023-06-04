@@ -83,14 +83,6 @@ func (b *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
 		b.responseWriter.WriteErrorf(w, "error writing bootstrap config: %v", err)
 		return
 	}
-
-	b.logger.Info("reloading mariadbd process")
-	if err := mariadbd.ReloadWithOptions(b.mariadbdReloadOptions); err != nil {
-		b.responseWriter.WriteErrorf(w, "error reloading mariadbd process: %v", err)
-		return
-	}
-	b.logger.Info("mariadbd process reloaded")
-
 	w.WriteHeader(http.StatusOK)
 }
 
