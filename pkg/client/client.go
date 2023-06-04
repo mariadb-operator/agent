@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	defaultBaseUrl = "http://localhost:5555/api"
+	defaultBaseUrl = "http://localhost:5555"
 	jsonMediaType  = "application/json"
 )
 
@@ -52,6 +52,10 @@ func WithTimeout(timeout time.Duration) Option {
 }
 
 type Client struct {
+	Bootstrap   *Bootstrap
+	GaleraState *GaleraState
+	Recovery    *Recovery
+
 	baseUrl    *url.URL
 	httpClient *http.Client
 	headers    map[string]string
@@ -74,6 +78,15 @@ func NewClient(opts ...Option) (*Client, error) {
 		}
 	}
 
+	client.Bootstrap = &Bootstrap{
+		Client: client,
+	}
+	client.GaleraState = &GaleraState{
+		Client: client,
+	}
+	client.Recovery = &Recovery{
+		Client: client,
+	}
 	return client, nil
 }
 

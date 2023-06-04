@@ -11,38 +11,8 @@ import (
 	"strings"
 )
 
-type requestOptions struct {
-	headers map[string]string
-	query   map[string]string
-	body    interface{}
-}
-
-type requestOption func(*requestOptions)
-
-func withHeaders(headers map[string]string) requestOption {
-	return func(ro *requestOptions) {
-		ro.headers = headers
-	}
-}
-
-func withQuery(query map[string]string) requestOption {
-	return func(ro *requestOptions) {
-		ro.query = query
-	}
-}
-
-func withBody(body interface{}) requestOption {
-	return func(ro *requestOptions) {
-		ro.body = body
-	}
-}
-
-func (c *Client) newRequestWithContext(ctx context.Context, method, path string, reqOpts ...requestOption) (*http.Request, error) {
-	opts := requestOptions{}
-	for _, setOpt := range reqOpts {
-		setOpt(&opts)
-	}
-	baseUrl, err := buildURL(*c.baseUrl, path, opts.query)
+func (c *Client) newRequestWithContext(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
+	baseUrl, err := buildURL(*c.baseUrl, path)
 	if err != nil {
 		return nil, fmt.Errorf("error building URL: %v", err)
 	}
@@ -51,9 +21,6 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 		r.Header.Set("Content-Type", jsonMediaType)
 		r.Header.Set("Accept", jsonMediaType)
 		for k, v := range c.headers {
-			r.Header.Set(k, v)
-		}
-		for k, v := range opts.headers {
 			r.Header.Set(k, v)
 		}
 	}
@@ -68,8 +35,8 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 	}
 
 	var bodyReader io.Reader
-	if opts.body != nil {
-		bodyBytes, err := json.Marshal(opts.body)
+	if body != nil {
+		bodyBytes, err := json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling body: %v", err)
 		}
@@ -84,23 +51,11 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 	return req, nil
 }
 
-func (c *Client) newRequest(method, path string, reqOpts ...requestOption) (*http.Request, error) {
-	return c.newRequestWithContext(context.Background(), method, path, reqOpts...)
-}
-
-func buildURL(baseUrl url.URL, path string, query map[string]string) (*url.URL, error) {
+func buildURL(baseUrl url.URL, path string) (*url.URL, error) {
 	if !strings.HasSuffix(baseUrl.Path, "/") {
 		baseUrl.Path += "/"
 	}
 	baseUrl.Path += path
-
-	if query != nil {
-		q := baseUrl.Query()
-		for k, v := range query {
-			q.Set(k, v)
-		}
-		baseUrl.RawQuery = q.Encode()
-	}
 
 	newUrl, err := url.Parse(baseUrl.String())
 	if err != nil {
