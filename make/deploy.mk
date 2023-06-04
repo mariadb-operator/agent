@@ -1,3 +1,6 @@
+CLUSTER ?= agent
+CLUSTER_OPERATOR ?= mdb
+
 ##@ Docker
 
 PLATFORM ?= linux/amd64,linux/arm64
@@ -25,9 +28,12 @@ docker-push: ## Build multi-arch docker image and push it to the registry.
 docker-inspect: ## Inspect docker image.
 	docker buildx imagetools inspect $(IMG)
 
+.PHONY: docker-load
+docker-load: ## Load docker image in KIND.
+	kind load docker-image --name ${CLUSTER_OPERATOR} ${IMG}
+
 ##@ Cluster
 
-CLUSTER ?= agent
 KIND_CONFIG ?= hack/config/kind.yaml
 KIND_IMAGE ?= kindest/node:v1.26.0
 
