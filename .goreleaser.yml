@@ -1,0 +1,14 @@
+changelog:
+  use: github-native
+builds:
+  - id: agent
+    main: main.go
+    binary: "agent_{{ .Version }}_{{ .Arch }}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
