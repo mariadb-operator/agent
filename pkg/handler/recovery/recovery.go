@@ -42,12 +42,6 @@ type Recovery struct {
 
 type Option func(*Recovery)
 
-func WithMariadbdReload(opts *mariadbd.ReloadOptions) Option {
-	return func(b *Recovery) {
-		b.mariadbdReloadOptions = opts
-	}
-}
-
 func WithRecovery(opts *RecoveryOptions) Option {
 	return func(r *Recovery) {
 		r.recoveryOptions = opts
