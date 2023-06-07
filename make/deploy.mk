@@ -4,7 +4,7 @@ CLUSTER_OPERATOR ?= mdb
 ##@ Docker
 
 PLATFORM ?= linux/amd64,linux/arm64
-IMG ?= ghcr.io/mariadb-operator/agent:latest
+IMG ?= ghcr.io/mariadb-operator/agent:v0.0.1
 BUILDX ?= docker buildx build --platform $(PLATFORM) -t $(IMG) 
 BUILDER ?= agent
 
