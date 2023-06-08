@@ -1,7 +1,10 @@
+CLUSTER ?= agent
+CLUSTER_OPERATOR ?= mdb
+
 ##@ Docker
 
 PLATFORM ?= linux/amd64,linux/arm64
-IMG ?= ghcr.io/mariadb-operator/agent:latest
+IMG ?= ghcr.io/mariadb-operator/agent:v0.0.1
 BUILDX ?= docker buildx build --platform $(PLATFORM) -t $(IMG) 
 BUILDER ?= agent
 
@@ -25,21 +28,33 @@ docker-push: ## Build multi-arch docker image and push it to the registry.
 docker-inspect: ## Inspect docker image.
 	docker buildx imagetools inspect $(IMG)
 
+.PHONY: docker-load
+docker-load: ## Load docker image in KIND.
+	kind load docker-image --name ${CLUSTER_OPERATOR} ${IMG}
+
+##@ Cluster
+
+KIND_CONFIG ?= hack/config/kind.yaml
+KIND_IMAGE ?= kindest/node:v1.26.0
+
+.PHONY: cluster
+cluster: kind ## Create the kind cluster.
+	$(KIND) create cluster --name $(CLUSTER) --config $(KIND_CONFIG)
+
+.PHONY: cluster-delete
+cluster-delete: kind ## Delete the kind cluster.
+	$(KIND) delete cluster --name $(CLUSTER)
+
+.PHONY: cluster-ctx
+cluster-ctx: ## Sets cluster context.
+	@kubectl config use-context kind-$(CLUSTER)
+
 ##@ MariaDB
 
 .PHONY: mariadb
-mariadb: ## Create a MariaDB galera cluster using docker compose.
-	docker compose up -d
+mariadb: ## Create a MariaDB galera in kind.
+	@./hack/mariadb.sh
 
-.PHONY: mariadb-rm
-mariadb-rm: ## Remove the MariaDB galera cluster.
-	docker compose rm --stop --force
-	sudo rm -rf mariadb
-
-.PHONY: mariadb-logs
-mariadb-logs: ## Check the MariaDB galera cluster logs.
-	docker compose logs --follow
-
-.PHONY: mariadb-ps
-mariadb-ps: ## Check the MariaDB processes.
-	ps -ef | grep mariadbd
+.PHONY: mariadb-delete
+mariadb-delete: ## Delete the MariaDB galera cluster.
+	@./hack/mariadb-delete.sh

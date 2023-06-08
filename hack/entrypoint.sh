@@ -2,11 +2,6 @@
 
 set -e
 
-if [ -z "$HOSTNAME" ]; then
-  echo "HOSTNAME environment variable not set"
-  exit 1
-fi
-
 if [ -z "$ENTRYPOINT" ]; then
     ENTRYPOINT="/usr/local/bin/docker-entrypoint.sh"
 fi

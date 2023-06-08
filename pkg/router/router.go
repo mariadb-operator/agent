@@ -64,6 +64,7 @@ func apiRouter(h *handler.Handler, opts *Options) http.Handler {
 	r.Get("/galerastate", h.GaleraState.Get)
 	r.Route("/recovery", func(r chi.Router) {
 		r.Put("/", h.Recovery.Put)
+		r.Post("/", h.Recovery.Post)
 		r.Delete("/", h.Recovery.Delete)
 	})
 

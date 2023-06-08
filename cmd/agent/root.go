@@ -8,10 +8,8 @@ import (
 
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler"
-	"github.com/mariadb-operator/agent/pkg/handler/bootstrap"
 	"github.com/mariadb-operator/agent/pkg/handler/recovery"
 	"github.com/mariadb-operator/agent/pkg/logger"
-	"github.com/mariadb-operator/agent/pkg/mariadbd"
 	"github.com/mariadb-operator/agent/pkg/router"
 	"github.com/mariadb-operator/agent/pkg/server"
 	"github.com/spf13/cobra"
@@ -30,13 +28,8 @@ var (
 	logTimeEncoder string
 	logDev         bool
 
-	bootstrapMariadbdReloadRetries   int
-	bootstrapMariadbdReloadRetryWait time.Duration
-
-	recoveryMariadbdReloadRetries   int
-	recoveryMariadbdReloadRetryWait time.Duration
-	recoveryRetries                 int
-	recoveryRetryWait               time.Duration
+	recoveryRetries   int
+	recoveryRetryWait time.Duration
 )
 
 var rootCmd = &cobra.Command{
@@ -62,17 +55,7 @@ var rootCmd = &cobra.Command{
 
 		handlerLogger := logger.WithName("handler")
 		handler := handler.NewHandler(fileManager, &handlerLogger,
-			handler.WithBootstrapOptions(
-				bootstrap.WithMariadbdReload(&mariadbd.ReloadOptions{
-					Retries:   bootstrapMariadbdReloadRetries,
-					WaitRetry: bootstrapMariadbdReloadRetryWait,
-				}),
-			),
 			handler.WithRecoveryOptions(
-				recovery.WithMariadbdReload(&mariadbd.ReloadOptions{
-					Retries:   recoveryMariadbdReloadRetries,
-					WaitRetry: recoveryMariadbdReloadRetryWait,
-				}),
 				recovery.WithRecovery(&recovery.RecoveryOptions{
 					Retries:   recoveryRetries,
 					WaitRetry: recoveryRetryWait,
@@ -114,15 +97,6 @@ func init() {
 		"epoch, millis, nano, iso8601, rfc3339 or rfc3339nano")
 	rootCmd.Flags().BoolVar(&logDev, "log-dev", false, "Enable development logs.")
 
-	rootCmd.Flags().IntVar(&bootstrapMariadbdReloadRetries, "bootstrap-mariadbd-reload-retries", 10, "Maximum number of attempts "+
-		"to reload MariaDB process when bootstraping a new Galera cluster")
-	rootCmd.Flags().DurationVar(&bootstrapMariadbdReloadRetryWait, "bootstrap-mariadbd-reload-retry-wait", 1*time.Second,
-		"Time to wait between MariaDB process reload attempts when bootstrapping a new Galera cluster")
-
-	rootCmd.Flags().IntVar(&recoveryMariadbdReloadRetries, "recovery-mariadbd-reload-retries", 3, "Maximum number of attempts "+
-		"to reload MariaDB process when recovering the Galera cluster")
-	rootCmd.Flags().DurationVar(&recoveryMariadbdReloadRetryWait, "recovery-mariadbd-reload-retry-wait", 1*time.Second,
-		"Time to wait between MariaDB process reload attempts when recovering the Galera cluster")
 	rootCmd.Flags().IntVar(&recoveryRetries, "recovery-retries", 10, "Maximum number of attempts "+
 		"to recover the Galera cluster")
 	rootCmd.Flags().DurationVar(&recoveryRetryWait, "recovery-retry-wait", 3*time.Second, "Time to wait between "+

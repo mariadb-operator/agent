@@ -24,12 +24,6 @@ type Options struct {
 
 type Option func(*Options)
 
-func WithBootstrapOptions(opts ...bootstrap.Option) Option {
-	return func(o *Options) {
-		o.bootstrap = append(o.bootstrap, opts...)
-	}
-}
-
 func WithRecoveryOptions(opts ...recovery.Option) Option {
 	return func(o *Options) {
 		o.recovery = append(o.recovery, opts...)

@@ -11,14 +11,17 @@ import (
 	guuid "github.com/google/uuid"
 )
 
-var (
+const (
 	GaleraStateFileName = "grastate.dat"
 	BootstrapFileName   = "1-bootstrap.cnf"
 	BootstrapFile       = `[galera]
 wsrep_new_cluster="ON"`
 	RecoveryFileName    = "2-recovery.cnf"
 	RecoveryLogFileName = "mariadb.err"
-	RecoveryFile        = fmt.Sprintf(`[galera]
+)
+
+var (
+	RecoveryFile = fmt.Sprintf(`[galera]
 log_error=%s
 wsrep_recover="ON"`, RecoveryLogFileName)
 )
