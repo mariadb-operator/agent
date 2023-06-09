@@ -42,7 +42,6 @@ func NewRouter(handler *handler.Handler, opts ...Option) http.Handler {
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.Compress(routerOpts.CompressLevel))
-	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +55,7 @@ func NewRouter(handler *handler.Handler, opts ...Option) http.Handler {
 func apiRouter(h *handler.Handler, opts *Options) http.Handler {
 	r := chi.NewRouter()
 	r.Use(httprate.LimitAll(opts.RateLimitRequests, opts.RateLimitDuration))
+	r.Use(middleware.Logger)
 
 	r.Route("/bootstrap", func(r chi.Router) {
 		r.Put("/", h.Bootstrap.Put)
