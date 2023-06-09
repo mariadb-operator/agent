@@ -11,23 +11,10 @@ import (
 )
 
 const (
-	defaultBaseUrl = "http://localhost:5555"
-	jsonMediaType  = "application/json"
+	jsonMediaType = "application/json"
 )
 
 type Option func(*Client) error
-
-func WithBaseURL(baseUrl *url.URL) Option {
-	return func(c *Client) error {
-		_, err := url.Parse(baseUrl.String())
-		if err != nil {
-			return fmt.Errorf("error parsing base URL: %v", err)
-		}
-
-		c.baseUrl = baseUrl
-		return nil
-	}
-}
 
 func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *Client) error {
@@ -61,14 +48,13 @@ type Client struct {
 	headers    map[string]string
 }
 
-func NewClient(opts ...Option) (*Client, error) {
-	baseUrl, err := url.Parse(defaultBaseUrl)
+func NewClient(baseUrl string, opts ...Option) (*Client, error) {
+	url, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing base URL: %v", err)
 	}
-
 	client := &Client{
-		baseUrl:    baseUrl,
+		baseUrl:    url,
 		httpClient: http.DefaultClient,
 		headers:    make(map[string]string, 0),
 	}
