@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+const (
+	jsonMediaType = "application/json"
+)
+
 func (c *Client) newRequestWithContext(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
 	baseUrl, err := buildURL(*c.baseUrl, path)
 	if err != nil {
@@ -52,9 +56,7 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 }
 
 func buildURL(baseUrl url.URL, path string) (*url.URL, error) {
-	if !strings.HasSuffix(baseUrl.Path, "/") {
-		baseUrl.Path += "/"
-	}
+	baseUrl.Path = strings.TrimSuffix(baseUrl.Path, "/")
 	baseUrl.Path += path
 
 	newUrl, err := url.Parse(baseUrl.String())

@@ -10,10 +10,6 @@ import (
 	"github.com/mariadb-operator/agent/pkg/errors"
 )
 
-const (
-	jsonMediaType = "application/json"
-)
-
 type Option func(*Client) error
 
 func WithHTTPClient(httpClient *http.Client) Option {
