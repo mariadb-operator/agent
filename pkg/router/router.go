@@ -12,8 +12,8 @@ import (
 
 type Options struct {
 	CompressLevel     int
-	RateLimitRequests int
-	RateLimitDuration time.Duration
+	RateLimitRequests *int
+	RateLimitDuration *time.Duration
 }
 
 type Option func(*Options)
@@ -26,16 +26,14 @@ func WithCompressLevel(level int) Option {
 
 func WithRateLimit(requests int, duration time.Duration) Option {
 	return func(o *Options) {
-		o.RateLimitRequests = requests
-		o.RateLimitDuration = duration
+		o.RateLimitRequests = &requests
+		o.RateLimitDuration = &duration
 	}
 }
 
 func NewRouter(handler *handler.Handler, opts ...Option) http.Handler {
 	routerOpts := Options{
-		CompressLevel:     5,
-		RateLimitRequests: 100,
-		RateLimitDuration: 1 * time.Minute,
+		CompressLevel: 5,
 	}
 	for _, setOpt := range opts {
 		setOpt(&routerOpts)
@@ -54,7 +52,9 @@ func NewRouter(handler *handler.Handler, opts ...Option) http.Handler {
 
 func apiRouter(h *handler.Handler, opts *Options) http.Handler {
 	r := chi.NewRouter()
-	r.Use(httprate.LimitAll(opts.RateLimitRequests, opts.RateLimitDuration))
+	if opts.RateLimitRequests != nil && opts.RateLimitDuration != nil {
+		r.Use(httprate.LimitAll(*opts.RateLimitRequests, *opts.RateLimitDuration))
+	}
 	r.Use(middleware.Logger)
 
 	r.Route("/bootstrap", func(r chi.Router) {
