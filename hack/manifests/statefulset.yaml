@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: mariadb
       app.kubernetes.io/name: mariadb
-  serviceName: mariadb-headless
+  serviceName: mariadb-internal
   template:
     metadata:
       labels:

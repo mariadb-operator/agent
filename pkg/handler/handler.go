@@ -5,61 +5,39 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
-	"github.com/mariadb-operator/agent/pkg/handler/bootstrap"
-	"github.com/mariadb-operator/agent/pkg/handler/galerastate"
-	"github.com/mariadb-operator/agent/pkg/handler/recovery"
 	"github.com/mariadb-operator/agent/pkg/responsewriter"
 )
 
 type Handler struct {
-	Bootstrap   *bootstrap.Bootstrap
-	GaleraState *galerastate.GaleraState
-	Recovery    *recovery.Recovery
+	Bootstrap   *Bootstrap
+	GaleraState *GaleraState
+	Recovery    *Recovery
 }
 
-type Options struct {
-	bootstrap []bootstrap.Option
-	recovery  []recovery.Option
-}
-
-type Option func(*Options)
-
-func WithRecoveryOptions(opts ...recovery.Option) Option {
-	return func(o *Options) {
-		o.recovery = append(o.recovery, opts...)
-	}
-}
-
-func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, handlerOpts ...Option) *Handler {
-	opts := &Options{}
-	for _, setOpts := range handlerOpts {
-		setOpts(opts)
-	}
-
+func NewHandler(fileManager *filemanager.FileManager, logger *logr.Logger, recoveryOpts ...RecoveryOption) *Handler {
 	mux := &sync.RWMutex{}
 	bootstrapLogger := logger.WithName("bootstrap")
 	galeraStateLogger := logger.WithName("galerastate")
 	recoveryLogger := logger.WithName("recovery")
 
-	bootstrap := bootstrap.NewBootstrap(
+	bootstrap := NewBootstrap(
 		fileManager,
 		responsewriter.NewResponseWriter(&bootstrapLogger),
 		mux,
 		&bootstrapLogger,
-		opts.bootstrap...,
 	)
-	galerastate := galerastate.NewGaleraState(
+	galerastate := NewGaleraState(
 		fileManager,
 		responsewriter.NewResponseWriter(&galeraStateLogger),
 		mux.RLocker(),
 		&galeraStateLogger,
 	)
-	recovery := recovery.NewRecover(
+	recovery := NewRecover(
 		fileManager,
 		responsewriter.NewResponseWriter(&recoveryLogger),
 		mux,
 		&recoveryLogger,
-		opts.recovery...,
+		recoveryOpts...,
 	)
 
 	return &Handler{

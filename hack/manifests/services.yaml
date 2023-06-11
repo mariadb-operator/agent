@@ -22,7 +22,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: mariadb
     app.kubernetes.io/name: mariadb
-  name: mariadb-headless
+  name: mariadb-internal
 spec:
   type: ClusterIP
   ports:

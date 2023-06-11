@@ -7,9 +7,9 @@ require (
 	github.com/go-chi/httprate v0.7.4
 	github.com/go-logr/logr v1.2.4
 	github.com/google/uuid v1.3.0
-	github.com/mitchellh/go-ps v1.0.0
 	github.com/spf13/cobra v1.7.0
 	go.uber.org/zap v1.24.0
+	k8s.io/apimachinery v0.24.2
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
@@ -29,7 +29,6 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apimachinery v0.24.2 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect

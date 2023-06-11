@@ -1,6 +1,7 @@
-package recovery
+package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,52 +12,34 @@ import (
 	"github.com/mariadb-operator/agent/pkg/errors"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/galera"
-	"github.com/mariadb-operator/agent/pkg/mariadbd"
 	"github.com/mariadb-operator/agent/pkg/responsewriter"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
-
-var (
-	defaultMariadbdReloadOpts = mariadbd.ReloadOptions{
-		Retries:   3,
-		WaitRetry: 1 * time.Second,
-	}
-	defaultRecoveryOpts = RecoveryOptions{
-		Retries:   10,
-		WaitRetry: 3 * time.Second,
-	}
-)
-
-type RecoveryOptions struct {
-	Retries   int
-	WaitRetry time.Duration
-}
 
 type Recovery struct {
-	fileManager           *filemanager.FileManager
-	responseWriter        *responsewriter.ResponseWriter
-	locker                sync.Locker
-	logger                *logr.Logger
-	mariadbdReloadOptions *mariadbd.ReloadOptions
-	recoveryOptions       *RecoveryOptions
+	fileManager    *filemanager.FileManager
+	responseWriter *responsewriter.ResponseWriter
+	locker         sync.Locker
+	logger         *logr.Logger
+	timeout        time.Duration
 }
 
-type Option func(*Recovery)
+type RecoveryOption func(*Recovery)
 
-func WithRecovery(opts *RecoveryOptions) Option {
+func WithRecoveryTimeout(timeout time.Duration) RecoveryOption {
 	return func(r *Recovery) {
-		r.recoveryOptions = opts
+		r.timeout = timeout
 	}
 }
 
 func NewRecover(fileManager *filemanager.FileManager, responseWriter *responsewriter.ResponseWriter, locker sync.Locker,
-	logger *logr.Logger, opts ...Option) *Recovery {
+	logger *logr.Logger, opts ...RecoveryOption) *Recovery {
 	recovery := &Recovery{
-		fileManager:           fileManager,
-		responseWriter:        responseWriter,
-		locker:                locker,
-		logger:                logger,
-		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
-		recoveryOptions:       &defaultRecoveryOpts,
+		fileManager:    fileManager,
+		responseWriter: responseWriter,
+		locker:         locker,
+		logger:         logger,
+		timeout:        1 * time.Minute,
 	}
 	for _, setOpts := range opts {
 		setOpts(recovery)
@@ -101,7 +84,10 @@ func (r *Recovery) Post(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	bootstrap, err := r.recover()
+	recoveryCtx, cancel := context.WithTimeout(req.Context(), r.timeout)
+	defer cancel()
+
+	bootstrap, err := r.pollUntilRecovered(recoveryCtx)
 	if err != nil {
 		r.responseWriter.WriteErrorf(w, "error recovering galera: %v", err)
 		return
@@ -125,23 +111,33 @@ func (r *Recovery) Delete(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (r *Recovery) recover() (*galera.Bootstrap, error) {
-	for i := 0; i < r.recoveryOptions.Retries; i++ {
-		time.Sleep(r.recoveryOptions.WaitRetry)
-
-		bytes, err := r.fileManager.ReadStateFile(galera.RecoveryLogFileName)
+func (r *Recovery) pollUntilRecovered(ctx context.Context) (*galera.Bootstrap, error) {
+	// TODO: bump apimachinery and migrate to PollUntilContextTimeout.
+	// See: https://pkg.go.dev/k8s.io/apimachinery@v0.27.2/pkg/util/wait#PollUntilContextTimeout
+	var bootstrap *galera.Bootstrap
+	err := wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(context.Context) (bool, error) {
+		b, err := r.recover()
 		if err != nil {
-			r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoveryOptions.Retries)
-			continue
+			r.logger.Error(err, "error recovering galera from recovery log")
+			return false, nil
 		}
-
-		var recover galera.Bootstrap
-		err = recover.Unmarshal(bytes)
-		if err == nil {
-			return &recover, nil
-		}
-
-		r.logger.Error(err, "error recovering galera from recovery log", "retry", i, "max-retries", r.recoveryOptions.Retries)
+		bootstrap = b
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("maximum retries (%d) reached attempting to recover galera from recovery log", r.recoveryOptions.Retries)
+	return bootstrap, nil
+}
+
+func (r *Recovery) recover() (*galera.Bootstrap, error) {
+	bytes, err := r.fileManager.ReadStateFile(galera.RecoveryLogFileName)
+	if err != nil {
+		return nil, fmt.Errorf("error reading Galera state file: %v", err)
+	}
+	var bootstrap galera.Bootstrap
+	if err := bootstrap.Unmarshal(bytes); err != nil {
+		return nil, fmt.Errorf("error unmarshaling bootstrap: %v", err)
+	}
+	return &bootstrap, nil
 }

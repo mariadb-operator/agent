@@ -8,7 +8,6 @@ import (
 
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler"
-	"github.com/mariadb-operator/agent/pkg/handler/recovery"
 	"github.com/mariadb-operator/agent/pkg/logger"
 	"github.com/mariadb-operator/agent/pkg/router"
 	"github.com/mariadb-operator/agent/pkg/server"
@@ -28,8 +27,7 @@ var (
 	logTimeEncoder string
 	logDev         bool
 
-	recoveryRetries   int
-	recoveryRetryWait time.Duration
+	recoveryTimeout time.Duration
 )
 
 var rootCmd = &cobra.Command{
@@ -55,12 +53,7 @@ var rootCmd = &cobra.Command{
 
 		handlerLogger := logger.WithName("handler")
 		handler := handler.NewHandler(fileManager, &handlerLogger,
-			handler.WithRecoveryOptions(
-				recovery.WithRecovery(&recovery.RecoveryOptions{
-					Retries:   recoveryRetries,
-					WaitRetry: recoveryRetryWait,
-				}),
-			),
+			handler.WithRecoveryTimeout(recoveryTimeout),
 		)
 
 		router := router.NewRouter(
@@ -97,8 +90,6 @@ func init() {
 		"epoch, millis, nano, iso8601, rfc3339 or rfc3339nano")
 	rootCmd.Flags().BoolVar(&logDev, "log-dev", false, "Enable development logs.")
 
-	rootCmd.Flags().IntVar(&recoveryRetries, "recovery-retries", 10, "Maximum number of attempts "+
-		"to recover the Galera cluster")
-	rootCmd.Flags().DurationVar(&recoveryRetryWait, "recovery-retry-wait", 3*time.Second, "Time to wait between "+
-		"Galera cluster recover attempts ")
+	rootCmd.Flags().DurationVar(&recoveryTimeout, "recovery-timeout", 1*time.Minute, "Timeout to obtain sequence number "+
+		"during the Galera cluster recovery process")
 }

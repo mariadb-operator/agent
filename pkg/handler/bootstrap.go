@@ -1,4 +1,4 @@
-package bootstrap
+package handler
 
 import (
 	"encoding/json"
@@ -7,52 +7,29 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/go-logr/logr"
 	agenterrors "github.com/mariadb-operator/agent/pkg/errors"
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/galera"
-	"github.com/mariadb-operator/agent/pkg/mariadbd"
 	"github.com/mariadb-operator/agent/pkg/responsewriter"
 )
 
-var (
-	defaultMariadbdReloadOpts = mariadbd.ReloadOptions{
-		Retries:   10,
-		WaitRetry: 1 * time.Second,
-	}
-)
-
 type Bootstrap struct {
-	fileManager           *filemanager.FileManager
-	responseWriter        *responsewriter.ResponseWriter
-	locker                sync.Locker
-	logger                *logr.Logger
-	mariadbdReloadOptions *mariadbd.ReloadOptions
-}
-
-type Option func(*Bootstrap)
-
-func WithMariadbdReload(opts *mariadbd.ReloadOptions) Option {
-	return func(b *Bootstrap) {
-		b.mariadbdReloadOptions = opts
-	}
+	fileManager    *filemanager.FileManager
+	responseWriter *responsewriter.ResponseWriter
+	locker         sync.Locker
+	logger         *logr.Logger
 }
 
 func NewBootstrap(fileManager *filemanager.FileManager, responseWriter *responsewriter.ResponseWriter, locker sync.Locker,
-	logger *logr.Logger, opts ...Option) *Bootstrap {
-	bootstrap := &Bootstrap{
-		fileManager:           fileManager,
-		responseWriter:        responseWriter,
-		locker:                locker,
-		logger:                logger,
-		mariadbdReloadOptions: &defaultMariadbdReloadOpts,
+	logger *logr.Logger) *Bootstrap {
+	return &Bootstrap{
+		fileManager:    fileManager,
+		responseWriter: responseWriter,
+		locker:         locker,
+		logger:         logger,
 	}
-	for _, setOpts := range opts {
-		setOpts(bootstrap)
-	}
-	return bootstrap
 }
 
 func (b *Bootstrap) Put(w http.ResponseWriter, r *http.Request) {
