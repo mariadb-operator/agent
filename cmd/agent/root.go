@@ -91,7 +91,7 @@ func init() {
 	rootCmd.Flags().IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
 	rootCmd.Flags().IntVar(&rateLimitRequests, "rate-limit-requests", 100, "Number of requests to be used as rate limit")
 	rootCmd.Flags().DurationVar(&rateLimitDuration, "rate-limit-duration", 1*time.Minute, "Duration to be used as rate limit")
-	rootCmd.Flags().DurationVar(&gracefulShutdown, "graceful-shutdown", 30*time.Second, "Timeout to gracefully terminate "+
+	rootCmd.Flags().DurationVar(&gracefulShutdown, "graceful-shutdown", 5*time.Second, "Timeout to gracefully terminate "+
 		"in-flight requests")
 
 	rootCmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level to use, one of: "+
