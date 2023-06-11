@@ -10,27 +10,25 @@ import (
 	"github.com/mariadb-operator/agent/pkg/errors"
 )
 
-type Option func(*Client) error
+type Option func(*Client)
 
 func WithHTTPClient(httpClient *http.Client) Option {
-	return func(c *Client) error {
+	return func(c *Client) {
 		if httpClient == nil {
 			httpClient = http.DefaultClient
 		}
 
 		c.httpClient = httpClient
-		return nil
 	}
 }
 
 func WithTimeout(timeout time.Duration) Option {
-	return func(c *Client) error {
+	return func(c *Client) {
 		if timeout == 0 {
 			timeout = 1 * time.Minute
 		}
 
 		c.httpClient.Timeout = timeout
-		return nil
 	}
 }
 
@@ -55,9 +53,7 @@ func NewClient(baseUrl string, opts ...Option) (*Client, error) {
 		headers:    make(map[string]string, 0),
 	}
 	for _, setOpt := range opts {
-		if err := setOpt(client); err != nil {
-			return nil, fmt.Errorf("error setting option: %v", err)
-		}
+		setOpt(client)
 	}
 
 	client.Bootstrap = &Bootstrap{

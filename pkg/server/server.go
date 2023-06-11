@@ -7,23 +7,38 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/go-logr/logr"
 )
 
-type Server struct {
-	httpServer *http.Server
-	logger     *logr.Logger
+type Option func(*Server)
+
+func WithGracefulShutdown(timeout time.Duration) Option {
+	return func(s *Server) {
+		s.gracefulShutdown = timeout
+	}
 }
 
-func NewServer(addr string, handler http.Handler, logger *logr.Logger) *Server {
-	return &Server{
+type Server struct {
+	httpServer       *http.Server
+	logger           *logr.Logger
+	gracefulShutdown time.Duration
+}
+
+func NewServer(addr string, handler http.Handler, logger *logr.Logger, opts ...Option) *Server {
+	srv := &Server{
 		httpServer: &http.Server{
 			Addr:    addr,
 			Handler: handler,
 		},
-		logger: logger,
+		logger:           logger,
+		gracefulShutdown: 30 * time.Second,
 	}
+	for _, setOpt := range opts {
+		setOpt(srv)
+	}
+	return srv
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -37,8 +52,18 @@ func (s *Server) Start(ctx context.Context) error {
 		<-sig
 		defer stopServer()
 
+		shutdownCtx, cancel := context.WithTimeout(serverContext, s.gracefulShutdown)
+		defer cancel()
+		go func() {
+			<-shutdownCtx.Done()
+			if shutdownCtx.Err() == context.DeadlineExceeded {
+				s.logger.Info("graceful shutdown timed out... forcing exit")
+				os.Exit(1)
+			}
+		}()
+
 		s.logger.Info("shutting down server")
-		if err := s.httpServer.Shutdown(serverContext); err != nil {
+		if err := s.httpServer.Shutdown(shutdownCtx); err != nil {
 			errChan <- fmt.Errorf("error shutting down server: %v", err)
 		}
 	}()
@@ -49,9 +74,9 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 
 	select {
-	case <-serverContext.Done():
-		return nil
 	case err := <-errChan:
 		return err
+	case <-serverContext.Done():
+		return nil
 	}
 }

@@ -22,6 +22,7 @@ var (
 	compressLevel     int
 	rateLimitRequests int
 	rateLimitDuration time.Duration
+	gracefulShutdown  time.Duration
 
 	logLevel       string
 	logTimeEncoder string
@@ -52,7 +53,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		handlerLogger := logger.WithName("handler")
-		handler := handler.NewHandler(fileManager, &handlerLogger,
+		handler := handler.NewHandler(
+			fileManager,
+			&handlerLogger,
 			handler.WithRecoveryTimeout(recoveryTimeout),
 		)
 
@@ -63,7 +66,12 @@ var rootCmd = &cobra.Command{
 		)
 
 		serverLogger := logger.WithName("server")
-		server := server.NewServer(addr, router, &serverLogger)
+		server := server.NewServer(
+			addr,
+			router,
+			&serverLogger,
+			server.WithGracefulShutdown(gracefulShutdown),
+		)
 		if err := server.Start(context.Background()); err != nil {
 			logger.Error(err, "error starting server")
 			os.Exit(1)
@@ -83,6 +91,8 @@ func init() {
 	rootCmd.Flags().IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
 	rootCmd.Flags().IntVar(&rateLimitRequests, "rate-limit-requests", 100, "Number of requests to be used as rate limit")
 	rootCmd.Flags().DurationVar(&rateLimitDuration, "rate-limit-duration", 1*time.Minute, "Duration to be used as rate limit")
+	rootCmd.Flags().DurationVar(&gracefulShutdown, "graceful-shutdown", 30*time.Second, "Timeout to gracefully terminate "+
+		"in-flight requests")
 
 	rootCmd.Flags().StringVar(&logLevel, "log-level", "info", "Log level to use, one of: "+
 		"debug, info, warn, error, dpanic, panic, fatal.")
