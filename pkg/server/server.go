@@ -56,10 +56,7 @@ func (s *Server) Start(ctx context.Context) error {
 		defer cancel()
 		go func() {
 			<-shutdownCtx.Done()
-			if shutdownCtx.Err() == context.DeadlineExceeded {
-				s.logger.Info("graceful shutdown timed out... forcing exit")
-				os.Exit(1)
-			}
+			s.logger.Info("graceful shutdown timed out")
 		}()
 
 		s.logger.Info("shutting down server")
@@ -68,15 +65,17 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 	}()
 
-	s.logger.Info("server listening", "addr", s.httpServer.Addr)
-	if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
-		errChan <- fmt.Errorf("error starting server: %v", err)
-	}
+	go func() {
+		s.logger.Info("server listening", "addr", s.httpServer.Addr)
+		if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
+			errChan <- fmt.Errorf("error starting server: %v", err)
+		}
+	}()
 
 	select {
-	case err := <-errChan:
-		return err
 	case <-serverContext.Done():
 		return nil
+	case err := <-errChan:
+		return err
 	}
 }

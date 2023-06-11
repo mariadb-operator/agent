@@ -73,7 +73,7 @@ var rootCmd = &cobra.Command{
 			server.WithGracefulShutdown(gracefulShutdown),
 		)
 		if err := server.Start(context.Background()); err != nil {
-			logger.Error(err, "error starting server")
+			logger.Error(err, "server error")
 			os.Exit(1)
 		}
 	},
