@@ -26,8 +26,10 @@ func WithCompressLevel(level int) Option {
 
 func WithRateLimit(requests int, duration time.Duration) Option {
 	return func(o *Options) {
-		o.RateLimitRequests = &requests
-		o.RateLimitDuration = &duration
+		if requests != 0 && duration != 0 {
+			o.RateLimitRequests = &requests
+			o.RateLimitDuration = &duration
+		}
 	}
 }
 

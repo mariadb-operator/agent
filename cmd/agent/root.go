@@ -89,8 +89,8 @@ func init() {
 	rootCmd.Flags().StringVar(&stateDir, "state-dir", "/var/lib/mysql", "The directory that contains MariaDB state files")
 
 	rootCmd.Flags().IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
-	rootCmd.Flags().IntVar(&rateLimitRequests, "rate-limit-requests", 100, "Number of requests to be used as rate limit")
-	rootCmd.Flags().DurationVar(&rateLimitDuration, "rate-limit-duration", 1*time.Minute, "Duration to be used as rate limit")
+	rootCmd.Flags().IntVar(&rateLimitRequests, "rate-limit-requests", 0, "Number of requests to be used as rate limit")
+	rootCmd.Flags().DurationVar(&rateLimitDuration, "rate-limit-duration", 0, "Duration to be used as rate limit")
 	rootCmd.Flags().DurationVar(&gracefulShutdown, "graceful-shutdown", 5*time.Second, "Timeout to gracefully terminate "+
 		"in-flight requests")
 
