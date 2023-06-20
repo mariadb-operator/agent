@@ -11,8 +11,16 @@ type Recovery struct {
 	*Client
 }
 
-func (r *Recovery) Enable(ctx context.Context) (*galera.Bootstrap, error) {
+func (r *Recovery) Enable(ctx context.Context) error {
 	req, err := r.newRequestWithContext(ctx, http.MethodPut, "/api/recovery", nil)
+	if err != nil {
+		return err
+	}
+	return r.do(req, nil)
+}
+
+func (r *Recovery) Start(ctx context.Context) (*galera.Bootstrap, error) {
+	req, err := r.newRequestWithContext(ctx, http.MethodPost, "/api/recovery", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -21,14 +29,6 @@ func (r *Recovery) Enable(ctx context.Context) (*galera.Bootstrap, error) {
 		return nil, err
 	}
 	return &bootstrap, nil
-}
-
-func (r *Recovery) Start(ctx context.Context) error {
-	req, err := r.newRequestWithContext(ctx, http.MethodPost, "/api/recovery", nil)
-	if err != nil {
-		return err
-	}
-	return r.do(req, nil)
 }
 
 func (r *Recovery) Disable(ctx context.Context) error {
