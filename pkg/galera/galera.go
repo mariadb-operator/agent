@@ -29,6 +29,7 @@ wsrep_recover="ON"`, RecoveryLogFileName)
 type GaleraRecoverer interface {
 	GetUUID() string
 	GetSeqno() int
+	Compare(other GaleraRecoverer) int
 }
 
 type GaleraState struct {
@@ -44,6 +45,19 @@ func (g *GaleraState) GetUUID() string {
 
 func (g *GaleraState) GetSeqno() int {
 	return g.Seqno
+}
+
+func (g *GaleraState) Compare(other GaleraRecoverer) int {
+	if other == nil {
+		return 1
+	}
+	if g.GetSeqno() < other.GetSeqno() {
+		return -1
+	}
+	if g.GetSeqno() > other.GetSeqno() {
+		return 1
+	}
+	return 0
 }
 
 func (g *GaleraState) Marshal() ([]byte, error) {
@@ -142,6 +156,19 @@ func (b *Bootstrap) GetUUID() string {
 
 func (b *Bootstrap) GetSeqno() int {
 	return b.Seqno
+}
+
+func (g *Bootstrap) Compare(other GaleraRecoverer) int {
+	if other == nil {
+		return 1
+	}
+	if g.GetSeqno() < other.GetSeqno() {
+		return -1
+	}
+	if g.GetSeqno() > other.GetSeqno() {
+		return 1
+	}
+	return 0
 }
 
 func (b *Bootstrap) Validate() error {
