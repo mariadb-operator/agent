@@ -26,11 +26,24 @@ log_error=%s
 wsrep_recover="ON"`, RecoveryLogFileName)
 )
 
+type GaleraRecoverer interface {
+	GetUUID() string
+	GetSeqno() int
+}
+
 type GaleraState struct {
 	Version         string `json:"version"`
 	UUID            string `json:"uuid"`
 	Seqno           int    `json:"seqno"`
 	SafeToBootstrap bool   `json:"safeToBootstrap"`
+}
+
+func (g *GaleraState) GetUUID() string {
+	return g.UUID
+}
+
+func (g *GaleraState) GetSeqno() int {
+	return g.Seqno
 }
 
 func (g *GaleraState) Marshal() ([]byte, error) {
@@ -121,6 +134,14 @@ func (g *GaleraState) Unmarshal(text []byte) error {
 type Bootstrap struct {
 	UUID  string `json:"uuid"`
 	Seqno int    `json:"seqno"`
+}
+
+func (b *Bootstrap) GetUUID() string {
+	return b.UUID
+}
+
+func (b *Bootstrap) GetSeqno() int {
+	return b.Seqno
 }
 
 func (b *Bootstrap) Validate() error {
