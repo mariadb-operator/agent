@@ -1,4 +1,53 @@
 # agent
-🤖 Sidecar agent for MariaDB that co-operates with mariadb-operator
+🤖 Sidecar agent for MariaDB that co-operates with [mariadb-operator](https://github.com/mariadb-operator/mariadb-operator). Remotely manage Galera via HTTP instead of configuration `*.cnf` files
+- HTTP API to manage Galera and expose the MariaDB state to `mariadb-operator`
+- Query and update Galera state without mounting`/var/lib/mysql/grastate.dat`
+- Perform [Galera cluster recovery](https://galeracluster.com/library/documentation/crash-recovery.html) remotely 
+- Bootstrap new Galera cluster as a result of the cluster recovery
+- Idiomatic Go HTTP client [pkg/client](./pkg/client/)
+- TODO: Authentication using Kubernetes service accounts via [TokenReview](https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/) API
 
-🚧🚧🚧
+
+### How to use it
+
+Refer to the agent image in the MariaDB CRD `spec.galera.agent` field.
+
+```yaml
+apiVersion: mariadb.mmontes.io/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb-galera
+spec:
+  ...
+  image:
+    repository: mariadb
+    tag: "10.11.3"
+    pullPolicy: IfNotPresent
+  port: 3306
+  replicas: 3
+
+  galera:
+    sst: mariabackup
+    replicaThreads: 1
+
+    agent:
+      image:
+        repository: ghcr.io/mariadb-operator/agent
+        tag: "v0.0.1"
+        pullPolicy: IfNotPresent
+      port: 5555
+      gracefulShutdownTimeout: 5s
+    
+    recovery:
+      clusterHealthyTimeout: 3m
+      clusterBootstrapTimeout: 5m
+      podRecoveryTimeout: 3m
+      podSyncTimeout: 3m
+  ...
+```
+
+### HTTP API
+
+You can consume the agent API using the [pkg/client](./pkg/client/). Alternatively, take a look at our Postman collection:
+
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/9776-cbdc1706-5e01-423a-822a-ed46daff6abd?action=collection%2Ffork&collection-url=entityId%3D9776-cbdc1706-5e01-423a-822a-ed46daff6abd%26entityType%3Dcollection%26workspaceId%3Da184b7e4-b1f7-405e-b9ec-ec62ed36dd27#?env%5BKubernetes%5D=W3sia2V5IjoidXJsIiwidmFsdWUiOiJodHRwOi8vbWFyaWFkYi1nYWxlcmEtMC5tYXJpYWRiLWdhbGVyYS1pbnRlcm5hbC5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsOjU1NTUiLCJlbmFibGVkIjp0cnVlLCJ0eXBlIjoiZGVmYXVsdCIsInNlc3Npb25WYWx1ZSI6Imh0dHA6Ly9tYXJpYWRiLWdhbGVyYS0wLm1hcmlhZGItZ2FsZXJhLWludGVybmFsLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWw6NTU1NSIsInNlc3Npb25JbmRleCI6MH1d)
