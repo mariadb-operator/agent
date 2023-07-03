@@ -49,12 +49,6 @@ spec:
         pullPolicy: IfNotPresent
       port: 5555
       gracefulShutdownTimeout: 5s
-    
-    recovery:
-      clusterHealthyTimeout: 3m
-      clusterBootstrapTimeout: 5m
-      podRecoveryTimeout: 3m
-      podSyncTimeout: 3m
   ...
 ```
 
