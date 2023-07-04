@@ -19,10 +19,10 @@ var (
 	configDir string
 	stateDir  string
 
-	compressLevel     int
-	rateLimitRequests int
-	rateLimitDuration time.Duration
-	gracefulShutdown  time.Duration
+	compressLevel           int
+	rateLimitRequests       int
+	rateLimitDuration       time.Duration
+	gracefulShutdownTimeout time.Duration
 
 	logLevel       string
 	logTimeEncoder string
@@ -39,7 +39,7 @@ func main() {
 	flag.IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
 	flag.IntVar(&rateLimitRequests, "rate-limit-requests", 0, "Number of requests to be used as rate limit")
 	flag.DurationVar(&rateLimitDuration, "rate-limit-duration", 0, "Duration to be used as rate limit")
-	flag.DurationVar(&gracefulShutdown, "graceful-shutdown", 5*time.Second, "Timeout to gracefully terminate "+
+	flag.DurationVar(&gracefulShutdownTimeout, "graceful-shutdown-timeout", 5*time.Second, "Timeout to gracefully terminate "+
 		"in-flight requests")
 
 	flag.StringVar(&logLevel, "log-level", "info", "Log level to use, one of: "+
@@ -85,7 +85,7 @@ func main() {
 		addr,
 		router,
 		&serverLogger,
-		server.WithGracefulShutdown(gracefulShutdown),
+		server.WithGracefulShutdownTimeout(gracefulShutdownTimeout),
 	)
 	if err := server.Start(context.Background()); err != nil {
 		logger.Error(err, "server error")

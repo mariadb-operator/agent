@@ -14,16 +14,16 @@ import (
 
 type Option func(*Server)
 
-func WithGracefulShutdown(timeout time.Duration) Option {
+func WithGracefulShutdownTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
-		s.gracefulShutdown = timeout
+		s.gracefulShutdownTimeout = timeout
 	}
 }
 
 type Server struct {
-	httpServer       *http.Server
-	logger           *logr.Logger
-	gracefulShutdown time.Duration
+	httpServer              *http.Server
+	logger                  *logr.Logger
+	gracefulShutdownTimeout time.Duration
 }
 
 func NewServer(addr string, handler http.Handler, logger *logr.Logger, opts ...Option) *Server {
@@ -32,8 +32,8 @@ func NewServer(addr string, handler http.Handler, logger *logr.Logger, opts ...O
 			Addr:    addr,
 			Handler: handler,
 		},
-		logger:           logger,
-		gracefulShutdown: 30 * time.Second,
+		logger:                  logger,
+		gracefulShutdownTimeout: 30 * time.Second,
 	}
 	for _, setOpt := range opts {
 		setOpt(srv)
@@ -52,7 +52,7 @@ func (s *Server) Start(ctx context.Context) error {
 		<-sig
 		defer stopServer()
 
-		shutdownCtx, cancel := context.WithTimeout(serverContext, s.gracefulShutdown)
+		shutdownCtx, cancel := context.WithTimeout(serverContext, s.gracefulShutdownTimeout)
 		defer cancel()
 		go func() {
 			<-shutdownCtx.Done()
