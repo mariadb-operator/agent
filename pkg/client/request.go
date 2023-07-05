@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	jsonMediaType           = "application/json"
-	serviceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	jsonMediaType = "application/json"
 )
 
 func (c *Client) newRequestWithContext(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
@@ -59,8 +58,8 @@ func (c *Client) setHeaders(r *http.Request) error {
 	for k, v := range c.headers {
 		r.Header.Set(k, v)
 	}
-	if c.kubernetesAuth {
-		if err := kubernetesAuthHeader(r); err != nil {
+	if c.kubernetesAuth && c.kubernetesSA != "" {
+		if err := kubernetesAuthHeader(r, c.kubernetesSA); err != nil {
 			return fmt.Errorf("error setting Kubernetes auth header: %v", err)
 		}
 	}
@@ -78,11 +77,11 @@ func buildURL(baseUrl url.URL, path string) (*url.URL, error) {
 	return newUrl, nil
 }
 
-func kubernetesAuthHeader(r *http.Request) error {
-	bytes, err := os.ReadFile(serviceAccountTokenPath)
+func kubernetesAuthHeader(r *http.Request, serviceAccountPath string) error {
+	bytes, err := os.ReadFile(serviceAccountPath)
 	if err != nil {
-		return fmt.Errorf("error setting Kubernetes auth header: error reading '%s': %v", serviceAccountTokenPath, err)
+		return fmt.Errorf("error setting Kubernetes auth header: error reading '%s': %v", serviceAccountPath, err)
 	}
-	r.Header.Set("Authentication", fmt.Sprintf("Bearer %s", string(bytes)))
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", string(bytes)))
 	return nil
 }

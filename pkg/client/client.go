@@ -26,14 +26,14 @@ func WithTimeout(timeout time.Duration) Option {
 		if timeout == 0 {
 			timeout = 1 * time.Minute
 		}
-
 		c.httpClient.Timeout = timeout
 	}
 }
 
-func WithKubernetesAuth(auth bool) Option {
+func WithKubernetesAuth(auth bool, serviceAccountPath string) Option {
 	return func(c *Client) {
 		c.kubernetesAuth = auth
+		c.kubernetesSA = serviceAccountPath
 	}
 }
 
@@ -46,6 +46,7 @@ type Client struct {
 	httpClient     *http.Client
 	headers        map[string]string
 	kubernetesAuth bool
+	kubernetesSA   string
 }
 
 func NewClient(baseUrl string, opts ...Option) (*Client, error) {
@@ -58,6 +59,7 @@ func NewClient(baseUrl string, opts ...Option) (*Client, error) {
 		httpClient:     http.DefaultClient,
 		headers:        make(map[string]string, 0),
 		kubernetesAuth: false,
+		kubernetesSA:   "",
 	}
 	for _, setOpt := range opts {
 		setOpt(client)
