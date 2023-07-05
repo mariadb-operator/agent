@@ -17,7 +17,6 @@ func WithHTTPClient(httpClient *http.Client) Option {
 		if httpClient == nil {
 			httpClient = http.DefaultClient
 		}
-
 		c.httpClient = httpClient
 	}
 }
@@ -32,14 +31,21 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
+func WithKubernetesAuth(auth bool) Option {
+	return func(c *Client) {
+		c.kubernetesAuth = auth
+	}
+}
+
 type Client struct {
 	Bootstrap   *Bootstrap
 	GaleraState *GaleraState
 	Recovery    *Recovery
 
-	baseUrl    *url.URL
-	httpClient *http.Client
-	headers    map[string]string
+	baseUrl        *url.URL
+	httpClient     *http.Client
+	headers        map[string]string
+	kubernetesAuth bool
 }
 
 func NewClient(baseUrl string, opts ...Option) (*Client, error) {
@@ -48,9 +54,10 @@ func NewClient(baseUrl string, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("error parsing base URL: %v", err)
 	}
 	client := &Client{
-		baseUrl:    url,
-		httpClient: http.DefaultClient,
-		headers:    make(map[string]string, 0),
+		baseUrl:        url,
+		httpClient:     http.DefaultClient,
+		headers:        make(map[string]string, 0),
+		kubernetesAuth: false,
 	}
 	for _, setOpt := range opts {
 		setOpt(client)

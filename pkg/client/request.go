@@ -8,11 +8,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
 const (
-	jsonMediaType = "application/json"
+	jsonMediaType           = "application/json"
+	serviceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 func (c *Client) newRequestWithContext(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
@@ -21,20 +23,14 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 		return nil, fmt.Errorf("error building URL: %v", err)
 	}
 
-	setHeaders := func(r *http.Request) {
-		r.Header.Set("Content-Type", jsonMediaType)
-		r.Header.Set("Accept", jsonMediaType)
-		for k, v := range c.headers {
-			r.Header.Set(k, v)
-		}
-	}
-
 	if method == http.MethodGet {
 		req, err := http.NewRequestWithContext(ctx, method, baseUrl.String(), nil)
 		if err != nil {
 			return nil, fmt.Errorf("error creating GET request: %v", err)
 		}
-		setHeaders(req)
+		if err := c.setHeaders(req); err != nil {
+			return nil, fmt.Errorf("error setting headers: %v", err)
+		}
 		return req, nil
 	}
 
@@ -51,8 +47,24 @@ func (c *Client) newRequestWithContext(ctx context.Context, method, path string,
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %v", err)
 	}
-	setHeaders(req)
+	if err := c.setHeaders(req); err != nil {
+		return nil, fmt.Errorf("error setting headers: %v", err)
+	}
 	return req, nil
+}
+
+func (c *Client) setHeaders(r *http.Request) error {
+	r.Header.Set("Content-Type", jsonMediaType)
+	r.Header.Set("Accept", jsonMediaType)
+	for k, v := range c.headers {
+		r.Header.Set(k, v)
+	}
+	if c.kubernetesAuth {
+		if err := kubernetesAuthHeader(r); err != nil {
+			return fmt.Errorf("error setting Kubernetes auth header: %v", err)
+		}
+	}
+	return nil
 }
 
 func buildURL(baseUrl url.URL, path string) (*url.URL, error) {
@@ -64,4 +76,13 @@ func buildURL(baseUrl url.URL, path string) (*url.URL, error) {
 		return nil, fmt.Errorf("error building URL: %v", err)
 	}
 	return newUrl, nil
+}
+
+func kubernetesAuthHeader(r *http.Request) error {
+	bytes, err := os.ReadFile(serviceAccountTokenPath)
+	if err != nil {
+		return fmt.Errorf("error setting Kubernetes auth header: error reading '%s': %v", serviceAccountTokenPath, err)
+	}
+	r.Header.Set("Authentication", fmt.Sprintf("Bearer %s", string(bytes)))
+	return nil
 }

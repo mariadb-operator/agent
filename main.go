@@ -9,6 +9,8 @@ import (
 
 	"github.com/mariadb-operator/agent/pkg/filemanager"
 	"github.com/mariadb-operator/agent/pkg/handler"
+	"github.com/mariadb-operator/agent/pkg/kubeclientset"
+	"github.com/mariadb-operator/agent/pkg/kubernetesauth"
 	"github.com/mariadb-operator/agent/pkg/logger"
 	"github.com/mariadb-operator/agent/pkg/router"
 	"github.com/mariadb-operator/agent/pkg/server"
@@ -19,16 +21,18 @@ var (
 	configDir string
 	stateDir  string
 
-	compressLevel           int
-	rateLimitRequests       int
-	rateLimitDuration       time.Duration
-	gracefulShutdownTimeout time.Duration
+	compressLevel              int
+	rateLimitRequests          int
+	rateLimitDuration          time.Duration
+	kubernetesAuth             bool
+	kubernetesTrustedName      string
+	kubernetesTrustedNamespace string
+	recoveryTimeout            time.Duration
+	gracefulShutdownTimeout    time.Duration
 
 	logLevel       string
 	logTimeEncoder string
 	logDev         bool
-
-	recoveryTimeout time.Duration
 )
 
 func main() {
@@ -39,6 +43,12 @@ func main() {
 	flag.IntVar(&compressLevel, "compress-level", 5, "HTTP compression level")
 	flag.IntVar(&rateLimitRequests, "rate-limit-requests", 0, "Number of requests to be used as rate limit")
 	flag.DurationVar(&rateLimitDuration, "rate-limit-duration", 0, "Duration to be used as rate limit")
+	flag.BoolVar(&kubernetesAuth, "kubernetes-auth", false, "Enable Kubernetes authentication via the TokenReview API")
+	flag.StringVar(&kubernetesTrustedName, "kubernetes-trusted-name", "", "Trusted Kubernetes ServiceAccount name to be verified")
+	flag.StringVar(&kubernetesTrustedNamespace, "kubernetes-trusted-namespace", "", "Trusted Kubernetes ServiceAccount "+
+		"namespace to be verified")
+	flag.DurationVar(&recoveryTimeout, "recovery-timeout", 1*time.Minute, "Timeout to obtain sequence number "+
+		"during the Galera cluster recovery process")
 	flag.DurationVar(&gracefulShutdownTimeout, "graceful-shutdown-timeout", 5*time.Second, "Timeout to gracefully terminate "+
 		"in-flight requests")
 
@@ -48,8 +58,6 @@ func main() {
 		"epoch, millis, nano, iso8601, rfc3339 or rfc3339nano")
 	flag.BoolVar(&logDev, "log-dev", false, "Enable development logs.")
 
-	flag.DurationVar(&recoveryTimeout, "recovery-timeout", 1*time.Minute, "Timeout to obtain sequence number "+
-		"during the Galera cluster recovery process")
 	flag.Parse()
 
 	logger, err := logger.NewLogger(
@@ -59,6 +67,12 @@ func main() {
 	)
 	if err != nil {
 		log.Fatalf("error creating logger: %v", err)
+	}
+
+	clientset, err := kubeclientset.NewKubeclientSet()
+	if err != nil {
+		logger.Error(err, "error creating Kubernetes clientset")
+		os.Exit(1)
 	}
 
 	fileManager, err := filemanager.NewFileManager(configDir, stateDir)
@@ -74,10 +88,24 @@ func main() {
 		handler.WithRecoveryTimeout(recoveryTimeout),
 	)
 
-	router := router.NewRouter(
-		handler,
+	routerOpts := []router.Option{
 		router.WithCompressLevel(compressLevel),
 		router.WithRateLimit(rateLimitRequests, rateLimitDuration),
+	}
+	if kubernetesAuth && kubernetesTrustedName != "" && kubernetesTrustedNamespace != "" {
+		routerOpts = append(routerOpts, router.WithKubernetesAuth(
+			kubernetesAuth,
+			&kubernetesauth.Trusted{
+				ServiceAccountName:      kubernetesTrustedName,
+				ServiceAccountNamespace: kubernetesTrustedNamespace,
+			},
+		))
+	}
+	router := router.NewRouter(
+		handler,
+		clientset,
+		logger,
+		routerOpts...,
 	)
 
 	serverLogger := logger.WithName("server")

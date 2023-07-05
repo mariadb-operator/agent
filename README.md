@@ -17,7 +17,7 @@ Sidecar agent for MariaDB that co-operates with [mariadb-operator](https://githu
 - Perform [Galera cluster recovery](https://galeracluster.com/library/documentation/crash-recovery.html) remotely 
 - Bootstrap new Galera cluster as a result of the cluster recovery
 - Idiomatic Go HTTP client [pkg/client](./pkg/client/)
-- TODO: Authentication using Kubernetes service accounts via [TokenReview](https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/) API
+- Authentication using Kubernetes service accounts via [TokenReview](https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/token-review-v1/) API
 
 
 ### How to use it
