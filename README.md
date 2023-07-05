@@ -48,6 +48,7 @@ spec:
         tag: "v0.0.2"
         pullPolicy: IfNotPresent
       port: 5555
+      kubernetesAuth: true
       gracefulShutdownTimeout: 5s
   ...
 ```
