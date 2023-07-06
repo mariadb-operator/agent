@@ -7,6 +7,7 @@
 <a href="https://github.com/mariadb-operator/agent/actions/workflows/release.yml"><img src="https://github.com/mariadb-operator/agent/actions/workflows/release.yml/badge.svg" alt="Release"></a>
 <a href="https://goreportcard.com/report/github.com/mariadb-operator/agent"><img src="https://goreportcard.com/badge/github.com/mariadb-operator/agent" alt="Go Report Card"></a>
 <a href="https://pkg.go.dev/github.com/mariadb-operator/agent"><img src="https://pkg.go.dev/badge/github.com/mariadb-operator/agent.svg" alt="Go Reference"></a>
+<a href="https://join.slack.com/t/mariadb-operator/shared_invite/zt-1xsfguxlf-dhtV6zk0HwlAh_U2iYfUxw"><img alt="Slack" src="https://img.shields.io/badge/slack-join_chat-blue?logo=Slack&label=slack&style=flat"></a>
 </p>
 
 
