@@ -112,10 +112,8 @@ func (r *Recovery) Delete(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Recovery) pollUntilRecovered(ctx context.Context) (*galera.Bootstrap, error) {
-	// TODO: bump apimachinery and migrate to PollUntilContextTimeout.
-	// See: https://pkg.go.dev/k8s.io/apimachinery@v0.27.2/pkg/util/wait#PollUntilContextTimeout
 	var bootstrap *galera.Bootstrap
-	err := wait.PollImmediateUntilWithContext(ctx, 1*time.Second, func(context.Context) (bool, error) {
+	err := wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(context.Context) (bool, error) {
 		b, err := r.recover()
 		if err != nil {
 			r.logger.Error(err, "error recovering galera from recovery log")
