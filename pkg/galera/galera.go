@@ -36,6 +36,7 @@ type GaleraState struct {
 	Version         string `json:"version"`
 	UUID            string `json:"uuid"`
 	Seqno           int    `json:"seqno"`
+	GTID            *GTID  `json:"gtid"`
 	SafeToBootstrap bool   `json:"safeToBootstrap"`
 }
 
@@ -60,7 +61,7 @@ func (g *GaleraState) Compare(other GaleraRecoverer) int {
 	return 0
 }
 
-func (g *GaleraState) Marshal() ([]byte, error) {
+func (g *GaleraState) MarshalText() ([]byte, error) {
 	if _, err := guuid.Parse(g.UUID); err != nil {
 		return nil, fmt.Errorf("invalid uuid: %v", err)
 	}
@@ -68,17 +69,19 @@ func (g *GaleraState) Marshal() ([]byte, error) {
 		Version         string
 		UUID            string
 		Seqno           int
+		GTID            *GTID
 		SafeToBootstrap int
 	}
 	tpl := createTpl("grastate.dat", `version: {{ .Version }}
 uuid: {{ .UUID }}
-seqno: {{ .Seqno }}
+seqno: {{ .Seqno }}{{ if .GTID }},{{ .GTID }}{{ end }}
 safe_to_bootstrap: {{ .SafeToBootstrap }}`)
 	buf := new(bytes.Buffer)
 	err := tpl.Execute(buf, tplOpts{
 		Version: g.Version,
 		UUID:    g.UUID,
 		Seqno:   g.Seqno,
+		GTID:    g.GTID,
 		SafeToBootstrap: func() int {
 			if g.SafeToBootstrap {
 				return 1
@@ -92,14 +95,17 @@ safe_to_bootstrap: {{ .SafeToBootstrap }}`)
 	return buf.Bytes(), nil
 }
 
-func (g *GaleraState) Unmarshal(text []byte) error {
+func (g *GaleraState) UnmarshalText(text []byte) error {
 	fileScanner := bufio.NewScanner(bytes.NewReader(text))
 	fileScanner.Split(bufio.ScanLines)
 
-	var version *string
-	var uuid *string
-	var seqno *int
-	var safeToBootstrap *bool
+	var (
+		version         *string
+		uuid            *string
+		seqno           *int
+		gtid            *GTID
+		safeToBootstrap *bool
+	)
 
 	for fileScanner.Scan() {
 		parts := strings.Split(fileScanner.Text(), ":")
@@ -118,7 +124,18 @@ func (g *GaleraState) Unmarshal(text []byte) error {
 			}
 			uuid = &value
 		case "seqno":
-			i, err := strconv.Atoi(value)
+			// When the `wsrep_gtid_mode` is set to `ON`, the `seqno` is
+			// actually a string of the form `seqno,gtid`.
+			seqnoStr, gtidStr, found := strings.Cut(value, ",")
+			if found {
+				gtid = &GTID{}
+				err := gtid.UnmarshalText([]byte(gtidStr))
+				if err != nil {
+					return fmt.Errorf("error parsing gtid: %v", err)
+				}
+
+			}
+			i, err := strconv.Atoi(seqnoStr)
 			if err != nil {
 				return fmt.Errorf("error parsing seqno: %v", err)
 			}
@@ -141,6 +158,10 @@ func (g *GaleraState) Unmarshal(text []byte) error {
 	g.Version = *version
 	g.UUID = *uuid
 	g.Seqno = *seqno
+	// Only set the GTID if it was found in the file.
+	if gtid != nil {
+		g.GTID = gtid
+	}
 	g.SafeToBootstrap = *safeToBootstrap
 	return nil
 }
