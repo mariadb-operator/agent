@@ -45,7 +45,7 @@ func (g *GaleraState) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var galeraState galera.GaleraState
-	if err := galeraState.Unmarshal(bytes); err != nil {
+	if err := galeraState.UnmarshalText(bytes); err != nil {
 		g.responseWriter.WriteErrorf(w, "error unmarshaling galera state: %v", err)
 		return
 	}

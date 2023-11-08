@@ -65,11 +65,26 @@ seqno: -1
 safe_to_bootstrap: 0`,
 			wantErr: false,
 		},
+		{
+			name: "wsrep_gtid_mode enabled",
+			galeraState: &GaleraState{
+				Version:         "2.1",
+				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
+				Seqno:           1,
+				GTID:            &GTID{DomainID: 0, ServerID: 1, SequenceNumber: 2},
+				SafeToBootstrap: true,
+			},
+			want: `version: 2.1
+uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+seqno: 1,0-1-2
+safe_to_bootstrap: 1`,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bytes, err := tt.galeraState.Marshal()
+			bytes, err := tt.galeraState.MarshalText()
 			if tt.wantErr && err == nil {
 				t.Fatal("error expected, got nil")
 			}
@@ -93,17 +108,17 @@ func TestGaleraStateUnmarshal(t *testing.T) {
 		{
 			name: "empty",
 			bytes: []byte(`
-`),
+		`),
 			want:    GaleraState{},
 			wantErr: true,
 		},
 		{
 			name: "comment",
 			bytes: []byte(`# GALERA saved state
-version: 2.1
-uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno:   1
-safe_to_bootstrap: 1`),
+		version: 2.1
+		uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno:   1
+		safe_to_bootstrap: 1`),
 			want: GaleraState{
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
@@ -115,10 +130,10 @@ safe_to_bootstrap: 1`),
 		{
 			name: "indentation",
 			bytes: []byte(`# GALERA saved state
-version: 												2.1
-uuid:  05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno:   																				1
-safe_to_bootstrap: 			1`),
+		version: 												2.1
+		uuid:  05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno:   																				1
+		safe_to_bootstrap: 			1`),
 			want: GaleraState{
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
@@ -130,39 +145,39 @@ safe_to_bootstrap: 			1`),
 		{
 			name: "invalid uuid",
 			bytes: []byte(`# GALERA saved state
-version: 2.1
-uuid:    foo
-seqno:   -1
-safe_to_bootstrap: 1`),
+		version: 2.1
+		uuid:    foo
+		seqno:   -1
+		safe_to_bootstrap: 1`),
 			want:    GaleraState{},
 			wantErr: true,
 		},
 		{
 			name: "invalid seqno",
 			bytes: []byte(`# GALERA saved state
-version: 2.1
-uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno:   foo
-safe_to_bootstrap: 1`),
+		version: 2.1
+		uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno:   foo
+		safe_to_bootstrap: 1`),
 			want:    GaleraState{},
 			wantErr: true,
 		},
 		{
 			name: "invalid safe_to_bootstrap",
 			bytes: []byte(`# GALERA saved state
-version: 2.1
-uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno:   1
-safe_to_bootstrap: true`),
+		version: 2.1
+		uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno:   1
+		safe_to_bootstrap: true`),
 			want:    GaleraState{},
 			wantErr: true,
 		},
 		{
 			name: "safe_to_bootstrap true",
 			bytes: []byte(`version: 2.1
-uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno: 1
-safe_to_bootstrap: 1`),
+		uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno: 1
+		safe_to_bootstrap: 1`),
 			want: GaleraState{
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
@@ -174,9 +189,9 @@ safe_to_bootstrap: 1`),
 		{
 			name: "safe_to_bootstrap false",
 			bytes: []byte(`version: 2.1
-uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno: 1
-safe_to_bootstrap: 0`),
+		uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno: 1
+		safe_to_bootstrap: 0`),
 			want: GaleraState{
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
@@ -188,9 +203,9 @@ safe_to_bootstrap: 0`),
 		{
 			name: "negative seqno",
 			bytes: []byte(`version: 2.1
-uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno: -1
-safe_to_bootstrap: 0`),
+		uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+		seqno: -1
+		safe_to_bootstrap: 0`),
 			want: GaleraState{
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
@@ -202,25 +217,41 @@ safe_to_bootstrap: 0`),
 		{
 			name: "missing safe_to_bootstrap",
 			bytes: []byte(`version: 2.1
-uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-safe_to_bootstrap: 0`),
+		uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+		safe_to_bootstrap: 0`),
 			want:    GaleraState{},
 			wantErr: true,
 		},
 		{
 			name: "missing seqno",
 			bytes: []byte(`version: 2.1
-uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-safe_to_bootstrap: 0`),
+		uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
+		safe_to_bootstrap: 0`),
 			want:    GaleraState{},
 			wantErr: true,
+		},
+		{
+			// See the following threadh: https://mariadb-operator.slack.com/archives/C056RAECH0W/p1699350363009529
+			name: "wsrep_gtid_mode enabled",
+			bytes: []byte(`# GALERA saved state
+version: 2.1
+uuid:    05f061bd-02a3-11ee-857c-aa370ff6666b
+seqno:   1,0-1-2
+safe_to_bootstrap: 1`),
+			want: GaleraState{
+				Version:         "2.1",
+				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
+				Seqno:           1,
+				GTID:            &GTID{DomainID: 0, ServerID: 1, SequenceNumber: 2},
+				SafeToBootstrap: true,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var galeraState GaleraState
-			err := galeraState.Unmarshal(tt.bytes)
+			err := galeraState.UnmarshalText(tt.bytes)
 			if tt.wantErr && err == nil {
 				t.Fatal("error expected, got nil")
 			}
@@ -412,7 +443,7 @@ Warning: Memory not freed: 280
 2023-06-04  8:24:18 0 [Note] Plugin 'FEEDBACK' is disabled.
 2023-06-04  8:24:18 0 [Note] Server socket created on IP: '0.0.0.0'.
 2023-06-04  8:24:18 0 [Note] WSREP: Recovered position: 08dd3b99-ac6b-46f8-84bd-8cb8f9f949b0:3
-Warning: Memory not freed: 280	
+Warning: Memory not freed: 280
 `),
 			want: Bootstrap{
 				UUID:  "08dd3b99-ac6b-46f8-84bd-8cb8f9f949b0",
