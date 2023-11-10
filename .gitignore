@@ -23,3 +23,6 @@ bin/
 
 # Directory to keep MariaDB files used for development
 mariadb/
+
+# Git
+.gitconfig
