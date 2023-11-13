@@ -9,7 +9,7 @@ import (
 
 func TestGTIDUnmarshal(t *testing.T) {
 	var gtid galera.GTID
-	err := gtid.UnmarshalText([]byte("0-1`-2"))
+	err := gtid.UnmarshalText([]byte("0-1-2"))
 	if err != nil {
 		t.Fatal(err)
 	}
