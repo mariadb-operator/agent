@@ -71,12 +71,11 @@ safe_to_bootstrap: 0`,
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
 				Seqno:           1,
-				GTID:            &GTID{DomainID: 0, ServerID: 1, SequenceNumber: 2},
 				SafeToBootstrap: true,
 			},
 			want: `version: 2.1
 uuid: 05f061bd-02a3-11ee-857c-aa370ff6666b
-seqno: 1,0-1-2
+seqno: 1
 safe_to_bootstrap: 1`,
 			wantErr: false,
 		},
@@ -242,7 +241,6 @@ safe_to_bootstrap: 1`),
 				Version:         "2.1",
 				UUID:            "05f061bd-02a3-11ee-857c-aa370ff6666b",
 				Seqno:           1,
-				GTID:            &GTID{DomainID: 0, ServerID: 1, SequenceNumber: 2},
 				SafeToBootstrap: true,
 			},
 		},

@@ -36,7 +36,6 @@ type GaleraState struct {
 	Version         string `json:"version"`
 	UUID            string `json:"uuid"`
 	Seqno           int    `json:"seqno"`
-	GTID            *GTID  `json:"gtid"`
 	SafeToBootstrap bool   `json:"safeToBootstrap"`
 }
 
@@ -69,19 +68,17 @@ func (g *GaleraState) MarshalText() ([]byte, error) {
 		Version         string
 		UUID            string
 		Seqno           int
-		GTID            *GTID
 		SafeToBootstrap int
 	}
 	tpl := createTpl("grastate.dat", `version: {{ .Version }}
 uuid: {{ .UUID }}
-seqno: {{ .Seqno }}{{ if .GTID }},{{ .GTID }}{{ end }}
+seqno: {{ .Seqno }}
 safe_to_bootstrap: {{ .SafeToBootstrap }}`)
 	buf := new(bytes.Buffer)
 	err := tpl.Execute(buf, tplOpts{
 		Version: g.Version,
 		UUID:    g.UUID,
 		Seqno:   g.Seqno,
-		GTID:    g.GTID,
 		SafeToBootstrap: func() int {
 			if g.SafeToBootstrap {
 				return 1
@@ -125,7 +122,10 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 			uuid = &value
 		case "seqno":
 			// When the `wsrep_gtid_mode` is set to `ON`, the `seqno` is
-			// actually a string of the form `seqno,gtid`.
+			// actually a string of the form `<seqno>,<gtid>`.
+			//
+			// For the moment we only care about the `seqno` part as we're
+			// still not sure about what to do with the `gtid`.
 			seqnoStr, gtidStr, found := strings.Cut(value, ",")
 			if found {
 				gtid = &GTID{}
@@ -133,7 +133,6 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 				if err != nil {
 					return fmt.Errorf("error parsing gtid: %v", err)
 				}
-
 			}
 			i, err := strconv.Atoi(seqnoStr)
 			if err != nil {
@@ -158,10 +157,6 @@ func (g *GaleraState) UnmarshalText(text []byte) error {
 	g.Version = *version
 	g.UUID = *uuid
 	g.Seqno = *seqno
-	// Only set the GTID if it was found in the file.
-	if gtid != nil {
-		g.GTID = gtid
-	}
 	g.SafeToBootstrap = *safeToBootstrap
 	return nil
 }
