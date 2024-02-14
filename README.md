@@ -1,3 +1,5 @@
+# ⚠️ Deprecated ⚠️: `agent` is now part of [`mariadb-operator`](https://github.com/mariadb-operator/mariadb-operator) glued CLI: https://github.com/mariadb-operator/mariadb-operator/pull/384
+
 <p align="center">
 <img src="https://mariadb-operator.github.io/mariadb-operator/assets/mariadb-operator_centered_whitebg.svg" alt="mariadb" width="100%"/>
 </p>
@@ -12,8 +14,6 @@
 
 
 # 🤖 agent
-
-⚠️ Deprecated ⚠️: `agent` is now part of [`mariadb-operator`](https://github.com/mariadb-operator/mariadb-operator) glued CLI: https://github.com/mariadb-operator/mariadb-operator/pull/384
 
 Sidecar agent for MariaDB that co-operates with [mariadb-operator](https://github.com/mariadb-operator/mariadb-operator). Remotely manage Galera via HTTP instead of configuration `*.cnf` files.
 - HTTP API to manage Galera and expose the MariaDB state to `mariadb-operator`
