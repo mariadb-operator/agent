@@ -12,6 +12,9 @@
 
 
 # 🤖 agent
+
+⚠️ Deprecated ⚠️: `agent` is now part of [`mariadb-operator`](https://github.com/mariadb-operator/mariadb-operator) glued CLI: https://github.com/mariadb-operator/mariadb-operator/pull/384
+
 Sidecar agent for MariaDB that co-operates with [mariadb-operator](https://github.com/mariadb-operator/mariadb-operator). Remotely manage Galera via HTTP instead of configuration `*.cnf` files.
 - HTTP API to manage Galera and expose the MariaDB state to `mariadb-operator`
 - Query and update Galera state without mounting `/var/lib/mysql/grastate.dat`
